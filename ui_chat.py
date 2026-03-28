@@ -3,7 +3,7 @@ import streamlit as st
 import io
 import json
 
-from audio import speech_to_text, speak_text, play_audio
+from audio import speak_text, play_audio
 from evaluation import (
     build_evaluation_prompt,
     save_evaluation,
@@ -74,50 +74,20 @@ def render_chat_page(
 
 
     # ==================================================
-    # 入力欄
+    # 入力欄（完全統一）
     # ==================================================
     st.markdown("---")
-    # スマホは音声入力UIを表示しない
-    if IS_MOBILE:
 
-        audio_input = None
-
-        text_input = st.chat_input(
-            "メッセージを入力（音声入力はキーボードのマイクを使用）"
-        )
-
-    else:
-
-        col_mic, col_text = st.columns([1, 6])
-
-        with col_mic:
-            audio_input = st.audio_input(
-                "🎤",
-                label_visibility="collapsed"
-            )
-
-        with col_text:
-            text_input = st.chat_input("メッセージを入力")
-
-
-    # ==================================================
-    # 入力統合
-    # ==================================================
-    user_input = None
-
-    if audio_input is not None:
-        user_input = speech_to_text(audio_input.read())
-    elif text_input:
-        user_input = text_input
+    text_input = st.chat_input("メッセージを入力")
 
     # ==================================================
     # メッセージ送信
     # ==================================================
-    if user_input:
-        st.session_state.chat_history.append(("user", user_input))
+    if text_input:
+        st.session_state.chat_history.append(("user", text_input))
 
         try:
-            raw_response = chat_session.send_message(user_input).text
+            raw_response = chat_session.send_message(text_input).text
             response = strip_thought(raw_response)
 
             if not response or not response.strip():
@@ -128,11 +98,11 @@ def render_chat_page(
 
         st.session_state.chat_history.append(("assistant", response))
 
-        # 🔥 音声生成フラグだけ
+        # 音声再生フラグ
         st.session_state["need_audio"] = True
-        st.session_state["last_message"] = response
 
         st.rerun()
+
 
     # ==================================================
     # 評価実行
@@ -278,5 +248,6 @@ def render_chat_page(
             st.markdown("（総合評価なし）")
 
         st.session_state.run_evaluation = False
+
 
 

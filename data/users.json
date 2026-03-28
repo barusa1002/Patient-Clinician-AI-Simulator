@@ -1,0 +1,32 @@
+{
+  "teacher01": {
+    "password": "scrypt:32768:8:1$liubinNClbq6lxOn$753fbc99a3e69084c257047b0285e21438932acfe079c6427b126df7668fe709cb571d52053355d75518be4960220a2eef358467946063523f382b9695b652e4",
+    "role": "staff",
+    "tutorial_done": true
+  },
+  "student01": {
+    "password": "scrypt:32768:8:1$kgVvVOYWnq6xj2Is$1bf669f2b89cab5ccddd7ac57313ca73a38afd401800f7746b3b69a6984c30cf06610c5d75907d71b4d11eea41e22e3bb7e1db469709ffdf3623064c9cb5a4ac",
+    "role": "student",
+    "tutorial_done": true
+  },
+  "student02": {
+    "password": "scrypt:32768:8:1$CIHQA91m8aafBt0e$d5df8525fa062f2e837292523dbcc6df4972064bda731d927b4ebef38703c2bdc38c4181f06aa0ca2f6950f96cd69487060f0bb15fa10580f30f1858c90cd4b1",
+    "role": "student",
+    "tutorial_done": true
+  },
+  "student03": {
+    "password": "scrypt:32768:8:1$26aVum0IGnW2dXe7$205b685f79c0d2ac96548d664cc7ec295703001a8e51aed8792391f0a466e97a3dcb587181c39c29d44accb9641d9b2dcfdf78f9c3e49b598ed322bb238c975b",
+    "role": "student",
+    "tutorial_done": true
+  },
+  "student04": {
+    "password": "scrypt:32768:8:1$poSL1QviTfD75abG$7912b0828c214eb9bc7bbb0b1889c580330e7dc0f388a34a05d507afda32094aec74fd5f61f30c6a936faa9976cdeb91a858d6732b752710389d5beb843b2e17",
+    "role": "student",
+    "tutorial_done": true
+  },
+  "student05": {
+    "password": "scrypt:32768:8:1$wFyC1oMQrjoFran0$95d87a4d77cc5bfda96caba6bb8ca58da9564cfff60a0d4a6ee6192757d3409c5cd69f8a594f80cef83a201ba685b5a70287582dcfa56df10e9073d50d42f483",
+    "role": "student",
+    "tutorial_done": true
+  }
+}

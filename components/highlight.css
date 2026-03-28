@@ -1,0 +1,72 @@
+/* =================================
+   チュートリアル ハイライト
+================================= */
+
+/* 光る枠 */
+.tutorial-highlight {
+    border: 3px solid #ff4b4b;
+    border-radius: 10px;
+    padding: 10px;
+    background-color: rgba(255, 75, 75, 0.08);
+    animation: tutorial-glow 1.2s infinite alternate;
+}
+
+/* 光るアニメーション */
+@keyframes tutorial-glow {
+    from {
+        box-shadow: 0 0 6px rgba(255,75,75,0.4);
+    }
+    to {
+        box-shadow: 0 0 25px rgba(255,75,75,1);
+    }
+}
+
+/* サイドバー用 */
+.sidebar-highlight {
+    border: 3px solid #ff4b4b;
+    border-radius: 8px;
+    padding: 6px;
+    animation: tutorial-glow 1.5s infinite alternate;
+}
+
+/* 入力欄用 */
+.input-highlight {
+    border: 3px solid #3cb371;
+    border-radius: 8px;
+    padding: 6px;
+    background-color: rgba(60,179,113,0.08);
+    animation: input-glow 1.2s infinite alternate;
+}
+
+@keyframes input-glow {
+    from {
+        box-shadow: 0 0 5px rgba(60,179,113,0.4);
+    }
+    to {
+        box-shadow: 0 0 20px rgba(60,179,113,0.9);
+    }
+}
+
+/* 説明ラベル */
+.tutorial-label {
+    font-weight: bold;
+    color: #ff4b4b;
+    font-size: 15px;
+    background-color: rgba(255,75,75,0.1);
+    padding: 4px 8px;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+/* 下矢印 */
+.tutorial-arrow {
+    font-size: 20px;
+    color: #ff4b4b;
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0% {transform: translateY(0);}
+    50% {transform: translateY(6px);}
+    100% {transform: translateY(0);}
+}

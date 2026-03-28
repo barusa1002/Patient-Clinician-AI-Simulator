@@ -1,0 +1,223 @@
+#ui_evaluation_viewer.py
+import streamlit as st
+import json
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib
+
+# 日本語フォント（Windows）
+matplotlib.rcParams['font.family'] = 'MS Gothic'
+
+
+# ===============================
+# レーダーチャート
+# ===============================
+def render_radar_chart(histories, mode="平均"):
+
+    categories = [
+        "薬局での患者応対",
+        "病棟での初回面談",
+        "来局者応対",
+        "在宅での薬学的管理",
+        "薬局での薬剤交付",
+        "病棟での服薬指導",
+        "一般医薬品の情報提供",
+        "疑義照会",
+        "医療従事者への情報提供"
+    ]
+
+    category_scores = {c: [] for c in categories}
+
+    for h in histories:
+        scenario = h.get("scenario")
+        evaluation = h.get("evaluation")
+
+        if scenario not in categories:
+            continue
+
+        if not evaluation:
+            continue
+
+        if isinstance(evaluation, str):
+            try:
+                evaluation = json.loads(evaluation)
+            except:
+                continue
+
+        if not isinstance(evaluation, dict):
+            continue
+
+        scores = evaluation.get("scores", {})
+        valid_scores = [v for v in scores.values() if v in [0, 1]]
+
+        if not valid_scores:
+            continue
+
+        rate = sum(valid_scores) / len(valid_scores)
+        category_scores[scenario].append(rate)
+
+    values = []
+
+    for c in categories:
+        scores = category_scores[c]
+
+        if not scores:
+            values.append(0)
+        elif mode == "平均":
+            values.append(np.mean(scores))
+        elif mode == "最高":
+            values.append(max(scores))
+        elif mode == "最新":
+            values.append(scores[-1])
+
+    if not any(values):
+        st.info("まだレーダーチャートを作成できる評価データがありません")
+        return
+
+    labels = categories
+    num_vars = len(labels)
+
+    angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False)
+
+    fig, ax = plt.subplots(figsize=(4, 4), subplot_kw=dict(polar=True))
+
+    # 色分け
+    colors = []
+    for v in values:
+        if v >= 0.7:
+            colors.append("green")
+        elif v < 0.5:
+            colors.append("red")
+        else:
+            colors.append("orange")
+
+    # 軸ライン
+    for i in range(num_vars):
+        ax.plot(
+            [angles[i], angles[i]],
+            [0, values[i]],
+            color=colors[i],
+            linewidth=1
+        )
+
+    # 閉じる
+    angles_closed = np.append(angles, angles[0])
+    values_closed = np.append(values, values[0])
+
+    ax.plot(angles_closed, values_closed, color="black", linewidth=1)
+    ax.fill(angles_closed, values_closed, alpha=0.15)
+
+    # ラベル
+    ax.set_xticks(angles)
+    ax.set_xticklabels(labels, fontsize=6, color="navy", fontweight="bold")
+    ax.tick_params(axis='x', pad=25)
+
+    # %表示
+    for i in range(num_vars):
+        angle = angles[i]
+        value = values[i]
+        r = 1.23
+
+        ha = "right" if np.pi/2 < angle < 3*np.pi/2 else "left"
+
+        ax.text(
+            angle,
+            r,
+            f"{int(value*100)}%",
+            color=colors[i],
+            fontsize=7,
+            fontweight="bold",
+            ha=ha,
+            va="center"
+        )
+
+    ax.set_ylim(0, 1.2)
+
+    # 合格ラインラベル
+    fig.text(
+            1.10,
+            1.00,
+            "- - -合格ライン 70%",
+            ha="right",
+            fontsize=6,
+            color="green",
+            bbox=dict(
+                facecolor="white",
+                edgecolor="green",
+                boxstyle="round,pad=0.3"
+            )
+        )
+
+    # 合格ライン
+    pass_rate = 0.7
+    ax.plot(
+        np.linspace(0, 2*np.pi, 200),
+        [pass_rate]*200,
+        linestyle="--",
+        linewidth=1,
+        color="green",
+        alpha=0.6
+    )
+
+    ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
+    ax.set_yticklabels([])
+    ax.grid(alpha=0.3)
+
+    st.pyplot(fig)
+
+
+# ===============================
+# 評価履歴
+# ===============================
+def render_evaluation_history(histories, show_detail=True):
+
+    if not histories:
+        st.info("まだ評価履歴はありません")
+        return
+
+    for h in reversed(histories):
+
+        evaluation = h["evaluation"]
+
+        if isinstance(evaluation, str):
+            try:
+                evaluation = json.loads(evaluation)
+            except:
+                continue
+
+        scores = evaluation.get("scores", {})
+        valid_scores = {k: v for k, v in scores.items() if v in [0, 1]}
+
+        total = len(valid_scores)
+        achieved = sum(valid_scores.values())
+        rate = achieved / total if total else 0
+        passed = rate >= 0.7
+
+        with st.expander(f"{h['timestamp']}｜{h['scenario']}"):
+
+            st.write(f"達成率：{achieved}/{total}（{rate*100:.1f}%）")
+
+            if passed:
+                st.success("🎉 合格")
+            else:
+                st.error("❌ 不合格")
+
+            st.markdown("### ✅ 達成項目")
+            for item in evaluation.get("achieved", []):
+                st.markdown(f"- {item}")
+
+            st.markdown("### ⚠ 不足項目")
+            for m in evaluation.get("missing", []):
+                st.markdown(f"- {m['item']}")
+
+            # ★ ここに入れるのが正解
+            if show_detail:
+                st.markdown("### 🧪 各評価項目")
+
+                for item, val in scores.items():
+                    if val == 1:
+                        st.markdown(f"🟢 {item}")
+                    elif val == 0:
+                        st.markdown(f"🔴 {item}")
+                    else:
+                        st.markdown(f"⚪ {item}")

@@ -1,0 +1,16 @@
+Patient Simulator AI
+Version: 1.0.0
+Release date: 2026-02-15
+
+Features:
+- Chat-based patient simulation
+- Voice synthesis (gTTS)
+- Voice recognition (Whisper, PC only)
+- Mobile UI support
+- Mobile audio playback button
+- Evaluation system
+- Staff dashboard
+
+Author: Kanta Takashima
+Organization: University Practical Training Support Tool
+

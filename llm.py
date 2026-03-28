@@ -1,18 +1,17 @@
 import streamlit as st
 import google.generativeai as genai
-from google.genai import types
 
 @st.cache_resource
 def get_client(api_key: str):
     if not api_key:
         return None
-    return genai.Client(api_key=api_key)
+    genai.configure(api_key=api_key)
+    return genai  # ← clientじゃなくてgenai自体を返す
 
 def start_chat(client, model_name, system_prompt):
-    config = types.GenerateContentConfig(
+    model = client.GenerativeModel(
+        model_name=model_name,
         system_instruction=system_prompt
     )
-    return client.chats.create(
-        model=model_name,
-        config=config
-    )
+    chat = model.start_chat()
+    return chat

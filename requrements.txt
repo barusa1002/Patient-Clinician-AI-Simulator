@@ -10,6 +10,6 @@ gTTS==2.5.4
 
 numpy>=1.24.0
 pandas>=2.0.0
-matplotlib
+matplotlib>=3.7.0
 
 python-dotenv>=1.0.0

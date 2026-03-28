@@ -113,7 +113,7 @@ if CLIENT is None:
 
 
 #audio.py
-from audio import speech_to_text, speak_text, play_audio
+from audio import speak_text, play_audio
 
 # utils.py
 from utils import strip_thought, reset_session
@@ -253,4 +253,3 @@ elif st.session_state.page == "staff_dashboard":
         st.error("このページは教職員専用です")
     else:
         render_staff_dashboard()
-

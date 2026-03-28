@@ -3,11 +3,8 @@ streamlit==1.41.1
 google-generativeai>=0.8.0
 
 gTTS==2.5.4
-
-# 音声認識使うなら残す
-# openai-whisper==20240930
-# torch>=2.1.0
-
+openai-whisper==20240930
+torch>=2.1.0
 numpy>=1.24.0
 pandas>=2.0.0
 matplotlib>=3.7.0

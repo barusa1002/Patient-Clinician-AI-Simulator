@@ -1,39 +1,8 @@
+#audio.py
 import io
-import os
 import base64
-import tempfile
 from gtts import gTTS
-import whisper
 import streamlit.components.v1 as components
-import streamlit as st
-
-
-# ==========================================
-# Whisper（音声→テキスト）
-# ==========================================
-@st.cache_resource
-def load_whisper():
-    return whisper.load_model("small")
-
-whisper_model = load_whisper()
-
-
-def speech_to_text(audio_bytes):
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-        tmp.write(audio_bytes)
-        tmp_path = tmp.name
-
-    try:
-        result = whisper_model.transcribe(
-            tmp_path,
-            language="ja"
-        )
-        return result["text"]
-
-    finally:
-        os.remove(tmp_path)
-
 
 # ==========================================
 # TTS（テキスト→音声）

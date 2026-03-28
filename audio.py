@@ -15,9 +15,7 @@ def speak_text(text):
     )
 
     mp3_fp = io.BytesIO()
-
     tts.write_to_fp(mp3_fp)
-
     mp3_fp.seek(0)
 
     return mp3_fp
@@ -32,7 +30,6 @@ def play_audio(
     speed="ふつう"
 ):
 
-    # read()ではなくgetvalue()を使用（重要）
     audio_base64 = base64.b64encode(
         audio_bytes.getvalue()
     ).decode()
@@ -41,7 +38,6 @@ def play_audio(
 
     if speed == "ゆっくり":
         playback_rate = 0.85
-
     elif speed == "はやい":
         playback_rate = 1.5
 
@@ -54,7 +50,6 @@ def play_audio(
 
         <script>
             var audio = document.getElementById("audio_player");
-
             if (audio) {{
                 audio.playbackRate = {playback_rate};
             }}
@@ -65,4 +60,3 @@ def play_audio(
         audio_html,
         height=70
     )
-

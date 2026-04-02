@@ -3,6 +3,17 @@ import streamlit as st
 import io
 import json
 
+if isinstance(evaluation_json, str):
+    evaluation_json = json.loads(evaluation_json)
+
+save_evaluation(
+    user_id=st.session_state["user_id"],
+    scenario=scenario,
+    subscenario=subscenario,
+    chat_history=chat_session,
+    evaluation_text=evaluation_json
+)
+
 from audio import speak_text, play_audio
 from evaluation import (
     build_evaluation_prompt,

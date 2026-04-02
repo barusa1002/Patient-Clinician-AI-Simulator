@@ -1,6 +1,6 @@
 #tutorial.py
 import streamlit as st
-from auth import load_users, save_users
+from db import supabase
 
 TOTAL_STEPS = 6
 
@@ -45,9 +45,9 @@ def finish_tutorial():
 
     username = st.session_state.username
 
-    users = load_users()
-    users[username]["tutorial_done"] = True
-    save_users(users)
+    supabase.table("users").update({
+        "tutorial_done": True
+    }).eq("id", username).execute()
 
 
 # -----------------------------

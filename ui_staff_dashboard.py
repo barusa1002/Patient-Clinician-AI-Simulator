@@ -1,26 +1,71 @@
 #ui_staff_dashboard.py
 import streamlit as st
-import json
-from evaluation import load_all_students_evaluations
+from supabase import create_client
 
-# ★ 追加
 from ui_evaluation_viewer import (
     render_radar_chart,
     render_evaluation_history
 )
 
+# ===============================
+# Supabase接続
+# ===============================
+url = st.secrets["SUPABASE_URL"]
+key = st.secrets["SUPABASE_KEY"]
 
+supabase = create_client(url, key)
+
+
+# ===============================
+# 全評価取得（Supabase）
+# ===============================
+def load_all_evaluations():
+
+    response = supabase.table("evaluations") \
+        .select("*") \
+        .order("created_at", desc=True) \
+        .execute()
+
+    return response.data
+
+
+# ===============================
+# ユーザーごとに整理
+# ===============================
+def group_by_user(evaluations):
+
+    grouped = {}
+
+    for e in evaluations:
+        user_id = e.get("user_id")
+
+        if not user_id:
+            continue
+
+        if user_id not in grouped:
+            grouped[user_id] = []
+
+        grouped[user_id].append(e)
+
+    return grouped
+
+
+# ===============================
+# ダッシュボード
+# ===============================
 def render_staff_dashboard():
 
     st.title("👨‍🏫 教員ダッシュボード")
 
-    all_data = load_all_students_evaluations()
+    all_evaluations = load_all_evaluations()
 
-    if not all_data:
+    if not all_evaluations:
         st.info("評価データがまだありません")
         return
 
-    student_ids = list(all_data.keys())
+    grouped_data = group_by_user(all_evaluations)
+
+    student_ids = list(grouped_data.keys())
 
     # ===============================
     # 学生選択
@@ -30,7 +75,7 @@ def render_staff_dashboard():
         student_ids
     )
 
-    evaluations = all_data.get(selected_student, [])
+    evaluations = grouped_data.get(selected_student, [])
 
     if not evaluations:
         st.warning("この学生には評価データがありません")
@@ -50,15 +95,17 @@ def render_staff_dashboard():
     render_radar_chart(evaluations, mode)
 
     # ===============================
-    # 評価履歴（学生と同じUI）
+    # 評価履歴
     # ===============================
     st.markdown("## 📚 評価履歴")
-    render_evaluation_history(evaluations, show_detail=True)
 
-
+    render_evaluation_history(
+        evaluations,
+        show_detail=True
+    )
 
     # ===============================
-    # 戻るボタン
+    # 戻る
     # ===============================
     st.markdown("---")
 

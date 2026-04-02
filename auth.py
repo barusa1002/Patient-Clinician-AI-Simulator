@@ -1,94 +1,105 @@
 #auth.py
 import streamlit as st
-import os
-import json
-import shutil
+from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-
-USER_FILE = "data/users.json"
-os.makedirs("data", exist_ok=True)
+from db import supabase
 
 
-def load_users():
-    if not os.path.exists(USER_FILE):
-        return {}
-    with open(USER_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-def save_users(users):
-    with open(USER_FILE, "w", encoding="utf-8") as f:
-        json.dump(users, f, indent=2)
-
+# =========================
+# ユーザー作成（Supabase）
+# =========================
 def create_user(username, password):
-    users = load_users()
-    if username in users:
+
+    # 既存ユーザー確認
+    res = supabase.table("users").select("*").eq("id", username).execute()
+
+    if res.data:
         return False
-    users[username] = {
+
+    supabase.table("users").insert({
+        "id": username,
         "password": generate_password_hash(password),
         "role": "student",
-        "tutorial_done": False
-    }
-    save_users(users)
+        "tutorial_done": False,
+        "consent": True,
+        "consent_timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }).execute()
+
     return True
+
 
 def create_staff_user(username, password):
-    users = load_users()
-    if username in users:
+
+    res = supabase.table("users").select("*").eq("id", username).execute()
+
+    if res.data:
         return False
 
-    users[username] = {
+    supabase.table("users").insert({
+        "id": username,
         "password": generate_password_hash(password),
         "role": "staff",
-        "tutorial_done": False
-    }
-    save_users(users)
+        "tutorial_done": False,
+        "consent": True,
+        "consent_timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }).execute()
+
     return True
 
 
+# =========================
+# 認証（ログイン）
+# =========================
 def authenticate(username, password):
-    users = load_users()
-    if username not in users:
-        return False, None
 
-    if check_password_hash(users[username]["password"], password):
-        return True, users[username]["role"]
+    res = supabase.table("users").select("*").eq("id", username).execute()
 
-    return False, None
+    if not res.data:
+        return False, None, None
+
+    user = res.data[0]
+
+    if check_password_hash(user["password"], password):
+        return True, user["role"], user
+
+    return False, None, None
 
 
-
-
+# =========================
+# ユーザーID変更
+# =========================
 def update_user_id(old_id, new_id):
-    users = load_users()
 
-    if old_id not in users or new_id in users:
+    # 既存チェック
+    res = supabase.table("users").select("*").eq("id", new_id).execute()
+
+    if res.data:
         return False
 
-    # --- users.json 更新 ---
-    users[new_id] = users.pop(old_id)
-    save_users(users)
-
-    # --- 評価履歴ファイルの名前変更 ---
-    old_eval = f"data/evaluations/{old_id}.json"
-    new_eval = f"data/evaluations/{new_id}.json"
-
-    if os.path.exists(old_eval) and not os.path.exists(new_eval):
-        os.rename(old_eval, new_eval)
+    # 更新
+    supabase.table("users").update({"id": new_id}).eq("id", old_id).execute()
 
     return True
 
+
+# =========================
+# パスワード変更
+# =========================
 def update_password(username, new_password):
-    users = load_users()
-    if username not in users:
-        return False
-    users[username]["password"] = generate_password_hash(new_password)
-    save_users(users)
+
+    supabase.table("users").update({
+        "password": generate_password_hash(new_password)
+    }).eq("id", username).execute()
+
     return True
 
+
+# =========================
+# ログイン画面
+# =========================
 def login_screen():
 
-    # タイトル
-    col1, col2, col3 = st.columns([1,8,1])
+    col1, col2, col3 = st.columns([1, 8, 1])
 
     with col2:
         st.image("images/logo.png", width=800)
@@ -106,19 +117,17 @@ def login_screen():
 
         if st.button("ログイン"):
 
-            ok, role = authenticate(username, password)
+            ok, role, user_data = authenticate(username, password)
 
             if ok:
-
-                users = load_users()
 
                 st.session_state.logged_in = True
                 st.session_state.username = username
                 st.session_state.user_id = username
                 st.session_state.role = role
 
-                # チュートリアル状態読み込み
-                st.session_state.tutorial_done = users[username].get("tutorial_done", False)
+                # 👇 DBから状態取得
+                st.session_state.tutorial_done = user_data.get("tutorial_done", False)
 
                 st.success("ログイン成功")
                 st.rerun()
@@ -135,6 +144,15 @@ def login_screen():
         new_pass1 = st.text_input("新しいパスワード", type="password")
         new_pass2 = st.text_input("新しいパスワード（確認）", type="password")
 
+        st.markdown("""
+---
+### 📄 研究利用について
+本アプリの利用データは教育・研究目的で使用される場合があります。  
+個人を特定する情報は収集されません。
+""")
+
+        consent = st.checkbox("上記内容を理解し、研究利用に同意します")
+
         if st.button("登録"):
 
             if not new_user:
@@ -143,10 +161,12 @@ def login_screen():
             elif new_pass1 != new_pass2:
                 st.error("パスワードが一致しません")
 
+            elif not consent:
+                st.error("研究利用への同意が必要です")
+
             else:
                 if create_user(new_user, new_pass1):
                     st.success("登録完了！ログインしてください")
-
                 else:
                     st.error("そのIDはすでに使われています")
 
@@ -159,13 +179,13 @@ def login_screen():
     st.info(
         """
 ・このアプリは **OSCE練習用AIシミュレーター**です  
-・評価履歴は自動保存されます  
+・評価履歴はクラウドに保存されます  
 ・不具合があればお問い合わせください
 """
     )
 
     # ---------------------------
-    # 問い合わせ・開発情報
+    # フッター
     # ---------------------------
     st.markdown("---")
 
@@ -173,10 +193,8 @@ def login_screen():
     st.caption("a22071@ug.shoyaku.ac.jp")
 
     st.caption("")
-
     st.caption("🛠 開発")
     st.caption("昭和薬科大学 薬学部 数理科学 瀧澤研究室")
-
     st.caption("開発者：高嶋 貫多")
 
     st.caption("")

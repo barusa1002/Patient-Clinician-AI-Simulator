@@ -303,45 +303,21 @@ JSON以外の文章は絶対に出力しない。
 
 
 # ==========================================================
-# 評価保存
+# 評価保存（Supabase版）
 # ==========================================================
 
 def save_evaluation(user_id, scenario, subscenario, chat_history, evaluation_text):
 
-    record = {
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    supabase.table("evaluations").insert({
+        "user_id": user_id,
         "scenario": scenario,
         "subscenario": subscenario,
-        "chat_history": chat_history,
-        "evaluation": evaluation_text
-    }
-
-    if os.path.exists(EVAL_FILE):
-        with open(EVAL_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    else:
-        data = {}
-
-    if user_id not in data:
-        data[user_id] = []
-
-    data[user_id].append(record)
-
-    with open(EVAL_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-
-# ==========================================================
-# 全学生評価取得
-# ==========================================================
-
-def load_all_students_evaluations():
-
-    if not os.path.exists(EVAL_FILE):
-        return {}
-
-    with open(EVAL_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+        "evaluation": {
+            "chat_history": chat_history,
+            "result": evaluation_text
+        },
+        "created_at": datetime.now().isoformat()
+    }).execute()
 
 
 # ==========================================================
@@ -350,10 +326,41 @@ def load_all_students_evaluations():
 
 def load_user_evaluations(user_id):
 
-    if not os.path.exists(EVAL_FILE):
-        return []
+    res = supabase.table("evaluations") \
+        .select("*") \
+        .eq("user_id", user_id) \
+        .order("created_at", desc=True) \
+        .execute()
 
-    with open(EVAL_FILE, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    return res.data
 
-    return data.get(user_id, [])
+
+# ==========================================================
+# 全学生評価取得（教員用）
+# ==========================================================
+
+def load_all_students_evaluations():
+
+    res = supabase.table("evaluations") \
+        .select("*") \
+        .order("created_at", desc=True) \
+        .execute()
+
+    # user_idごとにまとめる（従来形式に近づける）
+    result = {}
+
+    for row in res.data:
+        uid = row["user_id"]
+
+        if uid not in result:
+            result[uid] = []
+
+        result[uid].append({
+            "timestamp": row["created_at"],
+            "scenario": row["scenario"],
+            "subscenario": row["subscenario"],
+            "chat_history": row["evaluation"]["chat_history"],
+            "evaluation": row["evaluation"]["result"]
+        })
+
+    return result

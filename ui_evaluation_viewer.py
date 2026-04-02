@@ -10,6 +10,32 @@ matplotlib.rcParams['font.family'] = 'MS Gothic'
 
 
 # ===============================
+# 共通：evaluation正規化
+# ===============================
+def normalize_evaluation(h):
+    evaluation = h.get("evaluation")
+
+    if not evaluation:
+        return None
+
+    # Supabase構造対応
+    if isinstance(evaluation, dict) and "result" in evaluation:
+        evaluation = evaluation["result"]
+
+    # JSON文字列対応
+    if isinstance(evaluation, str):
+        try:
+            evaluation = json.loads(evaluation)
+        except:
+            return None
+
+    if not isinstance(evaluation, dict):
+        return None
+
+    return evaluation
+
+
+# ===============================
 # レーダーチャート
 # ===============================
 def render_radar_chart(histories, mode="平均"):
@@ -29,34 +55,32 @@ def render_radar_chart(histories, mode="平均"):
     category_scores = {c: [] for c in categories}
 
     for h in histories:
-        scenario = h.get("scenario")
-        evaluation = h.get("evaluation")
 
+        # --- scenario取得（超重要：正規化） ---
+        scenario = str(h.get("scenario", "")).strip()
+
+        if scenario not in categories:
+            continue
+
+        # --- evaluation取得 ---
+        evaluation = normalize_evaluation(h)
         if not evaluation:
-            continue
-        
-        if isinstance(evaluation, dict) and "result" in evaluation:
-            evaluation = evaluation["result"]
-        
-        if isinstance(evaluation, str):
-            try:
-                evaluation = json.loads(evaluation)
-            except:
-                continue
-        
-        if not isinstance(evaluation, dict):
-            continue
             continue
 
         scores = evaluation.get("scores", {})
+
         valid_scores = [v for v in scores.values() if v in [0, 1]]
 
         if not valid_scores:
             continue
 
         rate = sum(valid_scores) / len(valid_scores)
+
         category_scores[scenario].append(rate)
 
+    # ===============================
+    # 値生成
+    # ===============================
     values = []
 
     for c in categories:
@@ -71,10 +95,14 @@ def render_radar_chart(histories, mode="平均"):
         elif mode == "最新":
             values.append(scores[-1])
 
+    # データなし
     if not any(values):
         st.info("まだレーダーチャートを作成できる評価データがありません")
         return
 
+    # ===============================
+    # 描画
+    # ===============================
     labels = categories
     num_vars = len(labels)
 
@@ -136,18 +164,18 @@ def render_radar_chart(histories, mode="平均"):
 
     # 合格ラインラベル
     fig.text(
-            1.10,
-            1.00,
-            "- - -合格ライン 70%",
-            ha="right",
-            fontsize=6,
-            color="green",
-            bbox=dict(
-                facecolor="white",
-                edgecolor="green",
-                boxstyle="round,pad=0.3"
-            )
+        1.10,
+        1.00,
+        "- - -合格ライン 70%",
+        ha="right",
+        fontsize=6,
+        color="green",
+        bbox=dict(
+            facecolor="white",
+            edgecolor="green",
+            boxstyle="round,pad=0.3"
         )
+    )
 
     # 合格ライン
     pass_rate = 0.7
@@ -178,22 +206,9 @@ def render_evaluation_history(histories, show_detail=True):
 
     for h in reversed(histories):
 
-        evaluation = h.get("evaluation")
+        evaluation = normalize_evaluation(h)
 
         if not evaluation:
-            continue
-        
-        if isinstance(evaluation, dict) and "result" in evaluation:
-            evaluation = evaluation["result"]
-        
-        if isinstance(evaluation, str):
-            try:
-                evaluation = json.loads(evaluation)
-            except:
-                continue
-        
-        if not isinstance(evaluation, dict):
-            continue
             continue
 
         scores = evaluation.get("scores", {})
@@ -204,8 +219,8 @@ def render_evaluation_history(histories, show_detail=True):
         rate = achieved / total if total else 0
         passed = rate >= 0.7
 
-        timestamp = h.get("created_at", "日時不明")
-        scenario = h.get("scenario", "")
+        timestamp = h.get("created_at") or h.get("timestamp", "日時不明")
+        scenario = str(h.get("scenario", "")).strip()
 
         with st.expander(f"{timestamp}｜{scenario}"):
 

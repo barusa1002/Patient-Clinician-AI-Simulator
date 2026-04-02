@@ -35,6 +35,9 @@ def render_radar_chart(histories, mode="平均"):
         if not evaluation:
             continue
         
+        if isinstance(evaluation, dict) and "result" in evaluation:
+            evaluation = evaluation["result"]
+        
         if isinstance(evaluation, str):
             try:
                 evaluation = json.loads(evaluation)
@@ -42,6 +45,7 @@ def render_radar_chart(histories, mode="平均"):
                 continue
         
         if not isinstance(evaluation, dict):
+            continue
             continue
 
         scores = evaluation.get("scores", {})
@@ -178,14 +182,18 @@ def render_evaluation_history(histories, show_detail=True):
 
         if not evaluation:
             continue
-
+        
+        if isinstance(evaluation, dict) and "result" in evaluation:
+            evaluation = evaluation["result"]
+        
         if isinstance(evaluation, str):
             try:
                 evaluation = json.loads(evaluation)
             except:
                 continue
-
+        
         if not isinstance(evaluation, dict):
+            continue
             continue
 
         scores = evaluation.get("scores", {})

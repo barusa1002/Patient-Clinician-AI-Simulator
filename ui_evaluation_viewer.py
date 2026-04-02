@@ -5,8 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 
-# 日本語フォント（Windows）
-matplotlib.rcParams['font.family'] = 'MS Gothic'
+# 日本語フォント
+matplotlib.rcParams['font.family'] = 'IPAexGothic'
 
 
 # ===============================

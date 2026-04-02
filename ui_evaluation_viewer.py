@@ -155,7 +155,7 @@ def render_radar_chart(histories, mode="平均"):
     if font_prop:
         ax.set_xticklabels(
             labels,
-            fontsize=6,
+            fontsize=4,
             color="navy",
             fontweight="bold",
             fontproperties=font_prop

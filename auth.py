@@ -6,80 +6,89 @@ from db import supabase
 
 
 # =========================
-# ユーザー作成（Supabase）
+# ユーザー作成
 # =========================
 def create_user(username, password):
 
-    # 既存ユーザー確認
-    res = supabase.table("users").select("*").eq("id", username).execute()
+    try:
+        res = supabase.table("users").select("id").eq("id", username).execute()
 
-    if res.data:
+        if res.data:
+            return False
+
+        supabase.table("users").insert({
+            "id": username,
+            "password": generate_password_hash(password),
+            "role": "student",
+            "tutorial_done": False,
+            "consent": True,
+            "consent_timestamp": datetime.now().isoformat()
+        }).execute()
+
+        return True
+
+    except Exception as e:
+        st.error(f"ユーザー作成エラー: {e}")
         return False
-
-    supabase.table("users").insert({
-        "id": username,
-        "password": generate_password_hash(password),
-        "role": "student",
-        "tutorial_done": False,
-        "consent": True,
-        "consent_timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }).execute()
-
-    return True
-
-
-def create_staff_user(username, password):
-
-    res = supabase.table("users").select("*").eq("id", username).execute()
-
-    if res.data:
-        return False
-
-    supabase.table("users").insert({
-        "id": username,
-        "password": generate_password_hash(password),
-        "role": "staff",
-        "tutorial_done": False,
-        "consent": True,
-        "consent_timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }).execute()
-
-    return True
 
 
 # =========================
-# 認証（ログイン）
+# staff作成
+# =========================
+def create_staff_user(username, password):
+
+    try:
+        res = supabase.table("users").select("id").eq("id", username).execute()
+
+        if res.data:
+            return False
+
+        supabase.table("users").insert({
+            "id": username,
+            "password": generate_password_hash(password),
+            "role": "staff",
+            "tutorial_done": False,
+            "consent": True,
+            "consent_timestamp": datetime.now().isoformat()
+        }).execute()
+
+        return True
+
+    except Exception as e:
+        st.error(f"ユーザー作成エラー: {e}")
+        return False
+
+
+# =========================
+# 認証
 # =========================
 def authenticate(username, password):
 
-    res = supabase.table("users").select("*").eq("id", username).execute()
+    try:
+        res = supabase.table("users").select("*").eq("id", username).execute()
 
-    if not res.data:
+        if not res.data:
+            return False, None, None
+
+        user = res.data[0]
+
+        if check_password_hash(user["password"], password):
+            return True, user["role"], user
+
         return False, None, None
 
-    user = res.data[0]
-
-    if check_password_hash(user["password"], password):
-        return True, user["role"], user
-
-    return False, None, None
+    except Exception as e:
+        st.error(f"ログインエラー: {e}")
+        return False, None, None
 
 
 # =========================
-# ユーザーID変更
+# ユーザーID変更（⚠非推奨）
 # =========================
 def update_user_id(old_id, new_id):
 
-    # 既存チェック
-    res = supabase.table("users").select("*").eq("id", new_id).execute()
-
-    if res.data:
-        return False
-
-    # 更新
-    supabase.table("users").update({"id": new_id}).eq("id", old_id).execute()
-
-    return True
+    st.warning("ユーザーID変更は現在非対応です（Supabase制約）")
+    return False
 
 
 # =========================
@@ -87,11 +96,16 @@ def update_user_id(old_id, new_id):
 # =========================
 def update_password(username, new_password):
 
-    supabase.table("users").update({
-        "password": generate_password_hash(new_password)
-    }).eq("id", username).execute()
+    try:
+        supabase.table("users").update({
+            "password": generate_password_hash(new_password)
+        }).eq("id", username).execute()
 
-    return True
+        return True
+
+    except Exception as e:
+        st.error(f"パスワード更新エラー: {e}")
+        return False
 
 
 # =========================
@@ -112,10 +126,10 @@ def login_screen():
     # ---------------------------
     with tab_login:
 
-        username = st.text_input("ID")
-        password = st.text_input("パスワード", type="password")
+        username = st.text_input("ID", key="login_id")
+        password = st.text_input("パスワード", type="password", key="login_pass")
 
-        if st.button("ログイン"):
+        if st.button("ログイン", key="login_btn"):
 
             ok, role, user_data = authenticate(username, password)
 
@@ -126,7 +140,6 @@ def login_screen():
                 st.session_state.user_id = username
                 st.session_state.role = role
 
-                # 👇 DBから状態取得
                 st.session_state.tutorial_done = user_data.get("tutorial_done", False)
 
                 st.success("ログイン成功")
@@ -140,9 +153,9 @@ def login_screen():
     # ---------------------------
     with tab_register:
 
-        new_user = st.text_input("新しいID")
-        new_pass1 = st.text_input("新しいパスワード", type="password")
-        new_pass2 = st.text_input("新しいパスワード（確認）", type="password")
+        new_user = st.text_input("新しいID", key="reg_id")
+        new_pass1 = st.text_input("新しいパスワード", type="password", key="reg_pass1")
+        new_pass2 = st.text_input("新しいパスワード（確認）", type="password", key="reg_pass2")
 
         st.markdown("""
 ---
@@ -151,9 +164,9 @@ def login_screen():
 個人を特定する情報は収集されません。
 """)
 
-        consent = st.checkbox("上記内容を理解し、研究利用に同意します")
+        consent = st.checkbox("上記内容を理解し、研究利用に同意します", key="consent")
 
-        if st.button("登録"):
+        if st.button("登録", key="register_btn"):
 
             if not new_user:
                 st.error("IDを入力してください")
@@ -199,7 +212,3 @@ def login_screen():
 
     st.caption("")
     st.caption("Version 1.0")
-
-    
-
-        

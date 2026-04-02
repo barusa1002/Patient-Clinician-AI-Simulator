@@ -306,20 +306,16 @@ JSON以外の文章は絶対に出力しない。
 # ==========================================================
 # 評価保存（Supabase版）
 # ==========================================================
-
 def save_evaluation(user_id, scenario, subscenario, chat_history, evaluation_text):
 
     supabase.table("evaluations").insert({
         "user_id": user_id,
         "scenario": scenario,
         "subscenario": subscenario,
-        "evaluation": {
-            "chat_history": chat_history,
-            "result": evaluation_text
-        },
+        "chat_history": chat_history,
+        "evaluation": evaluation_text,
         "created_at": datetime.now().isoformat()
     }).execute()
-
 
 # ==========================================================
 # 個人評価取得

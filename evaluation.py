@@ -312,9 +312,10 @@ def save_evaluation(user_id, scenario, subscenario, chat_history, evaluation_tex
         "user_id": user_id,
         "scenario": scenario,
         "subscenario": subscenario,
-        "chat_history": chat_history,
-        "evaluation": evaluation_text,
-        "created_at": datetime.now().isoformat()
+        "evaluation": {
+            "chat_history": chat_history,
+            "result": evaluation_text
+        }
     }).execute()
 
 # ==========================================================

@@ -1,6 +1,7 @@
 #evaluation.py
 import os
 import json
+from db import supabase
 from datetime import datetime
 
 EVAL_FILE = "data/evaluations.json"

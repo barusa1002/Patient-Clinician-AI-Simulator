@@ -335,7 +335,6 @@ def load_user_evaluations(user_id):
 # ==========================================================
 # 全学生評価取得（教員用）
 # ==========================================================
-
 def load_all_students_evaluations():
 
     res = supabase.table("evaluations") \
@@ -343,7 +342,6 @@ def load_all_students_evaluations():
         .order("created_at", desc=True) \
         .execute()
 
-    # user_idごとにまとめる（従来形式に近づける）
     result = {}
 
     for row in res.data:
@@ -356,8 +354,9 @@ def load_all_students_evaluations():
             "timestamp": row["created_at"],
             "scenario": row["scenario"],
             "subscenario": row["subscenario"],
-            "chat_history": row["evaluation"]["chat_history"],
-            "evaluation": row["evaluation"]["result"]
+            "chat_history": row["chat_history"],   # ← ここ変わる
+            "evaluation": row["evaluation"]        # ← そのまま使える
         })
 
     return result
+

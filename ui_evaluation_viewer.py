@@ -163,7 +163,7 @@ def render_radar_chart(histories, mode="平均"):
     else:
         ax.set_xticklabels(labels, fontsize=6)
 
-    ax.tick_params(axis='x', pad=25)
+    ax.tick_params(axis='x', pad=40)
 
     # ===============================
     # %表示

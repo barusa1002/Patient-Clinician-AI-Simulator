@@ -32,18 +32,15 @@ def render_radar_chart(histories, mode="平均"):
         scenario = h.get("scenario")
         evaluation = h.get("evaluation")
 
-        if scenario not in categories:
-            continue
-
         if not evaluation:
             continue
-
+        
         if isinstance(evaluation, str):
             try:
                 evaluation = json.loads(evaluation)
             except:
                 continue
-
+        
         if not isinstance(evaluation, dict):
             continue
 
@@ -177,13 +174,19 @@ def render_evaluation_history(histories, show_detail=True):
 
     for h in reversed(histories):
 
-        evaluation = h["evaluation"]
+        evaluation = h.get("evaluation")
+
+        if not evaluation:
+            continue
 
         if isinstance(evaluation, str):
             try:
                 evaluation = json.loads(evaluation)
             except:
                 continue
+
+        if not isinstance(evaluation, dict):
+            continue
 
         scores = evaluation.get("scores", {})
         valid_scores = {k: v for k, v in scores.items() if v in [0, 1]}
@@ -193,7 +196,10 @@ def render_evaluation_history(histories, show_detail=True):
         rate = achieved / total if total else 0
         passed = rate >= 0.7
 
-        with st.expander(f"{h['timestamp']}｜{h['scenario']}"):
+        timestamp = h.get("created_at", "日時不明")
+        scenario = h.get("scenario", "")
+
+        with st.expander(f"{timestamp}｜{scenario}"):
 
             st.write(f"達成率：{achieved}/{total}（{rate*100:.1f}%）")
 
@@ -210,7 +216,6 @@ def render_evaluation_history(histories, show_detail=True):
             for m in evaluation.get("missing", []):
                 st.markdown(f"- {m['item']}")
 
-            # ★ ここに入れるのが正解
             if show_detail:
                 st.markdown("### 🧪 各評価項目")
 

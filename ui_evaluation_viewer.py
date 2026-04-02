@@ -3,12 +3,19 @@ import streamlit as st
 import json
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib
+import matplotlib.font_manager as fm
+import os
 
-# 日本語フォント
-matplotlib.rcParams['font.family'] = 'DejaVu Sans'
+def setup_japanese_font():
+    font_path = os.path.join("fonts", "NotoSansJP-Regular.ttf")
 
+    if os.path.exists(font_path):
+        font_prop = fm.FontProperties(fname=font_path)
+        plt.rcParams["font.family"] = font_prop.get_name()
+    else:
+        print("⚠ フォントが見つかりません")
 
+setup_japanese_font()
 # ===============================
 # 共通：evaluation正規化
 # ===============================

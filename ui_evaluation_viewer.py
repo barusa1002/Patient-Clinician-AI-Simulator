@@ -6,18 +6,22 @@ import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import os
 
-def setup_japanese_font():
+
+# ===============================
+# 日本語フォント設定（確実版）
+# ===============================
+def get_font_prop():
     font_path = os.path.join("fonts", "NotoSansJP-Regular.ttf")
 
     if os.path.exists(font_path):
-        font_prop = fm.FontProperties(fname=font_path)
-        plt.rcParams["font.family"] = font_prop.get_name()
+        return fm.FontProperties(fname=font_path)
     else:
-        print("⚠ フォントが見つかりません")
+        st.warning("⚠ 日本語フォントが見つかりません")
+        return None
 
-setup_japanese_font()
+
 # ===============================
-# 共通：evaluation正規化
+# evaluation正規化（超重要）
 # ===============================
 def normalize_evaluation(h):
     evaluation = h.get("evaluation")
@@ -47,6 +51,8 @@ def normalize_evaluation(h):
 # ===============================
 def render_radar_chart(histories, mode="平均"):
 
+    font_prop = get_font_prop()
+
     categories = [
         "薬局での患者応対",
         "病棟での初回面談",
@@ -61,28 +67,27 @@ def render_radar_chart(histories, mode="平均"):
 
     category_scores = {c: [] for c in categories}
 
+    # ===============================
+    # データ収集
+    # ===============================
     for h in histories:
 
-        # --- scenario取得（超重要：正規化） ---
         scenario = str(h.get("scenario", "")).strip()
 
         if scenario not in categories:
             continue
 
-        # --- evaluation取得 ---
         evaluation = normalize_evaluation(h)
         if not evaluation:
             continue
 
         scores = evaluation.get("scores", {})
-
         valid_scores = [v for v in scores.values() if v in [0, 1]]
 
         if not valid_scores:
             continue
 
         rate = sum(valid_scores) / len(valid_scores)
-
         category_scores[scenario].append(rate)
 
     # ===============================
@@ -102,7 +107,6 @@ def render_radar_chart(histories, mode="平均"):
         elif mode == "最新":
             values.append(scores[-1])
 
-    # データなし
     if not any(values):
         st.info("まだレーダーチャートを作成できる評価データがありません")
         return
@@ -143,12 +147,27 @@ def render_radar_chart(histories, mode="平均"):
     ax.plot(angles_closed, values_closed, color="black", linewidth=1)
     ax.fill(angles_closed, values_closed, alpha=0.15)
 
-    # ラベル
+    # ===============================
+    # ラベル（日本語フォント適用）
+    # ===============================
     ax.set_xticks(angles)
-    ax.set_xticklabels(labels, fontsize=6, color="navy", fontweight="bold")
+
+    if font_prop:
+        ax.set_xticklabels(
+            labels,
+            fontsize=6,
+            color="navy",
+            fontweight="bold",
+            fontproperties=font_prop
+        )
+    else:
+        ax.set_xticklabels(labels, fontsize=6)
+
     ax.tick_params(axis='x', pad=25)
 
+    # ===============================
     # %表示
+    # ===============================
     for i in range(num_vars):
         angle = angles[i]
         value = values[i]
@@ -156,33 +175,40 @@ def render_radar_chart(histories, mode="平均"):
 
         ha = "right" if np.pi/2 < angle < 3*np.pi/2 else "left"
 
-        ax.text(
-            angle,
-            r,
-            f"{int(value*100)}%",
-            color=colors[i],
-            fontsize=7,
-            fontweight="bold",
-            ha=ha,
-            va="center"
-        )
+        if font_prop:
+            ax.text(
+                angle, r, f"{int(value*100)}%",
+                color=colors[i],
+                fontsize=7,
+                fontweight="bold",
+                ha=ha,
+                va="center",
+                fontproperties=font_prop
+            )
+        else:
+            ax.text(angle, r, f"{int(value*100)}%")
 
     ax.set_ylim(0, 1.2)
 
+    # ===============================
     # 合格ラインラベル
-    fig.text(
-        1.10,
-        1.00,
-        "- - -合格ライン 70%",
-        ha="right",
-        fontsize=6,
-        color="green",
-        bbox=dict(
-            facecolor="white",
-            edgecolor="green",
-            boxstyle="round,pad=0.3"
+    # ===============================
+    if font_prop:
+        fig.text(
+            1.10, 1.00,
+            "- - -合格ライン 70%",
+            ha="right",
+            fontsize=6,
+            color="green",
+            fontproperties=font_prop,
+            bbox=dict(
+                facecolor="white",
+                edgecolor="green",
+                boxstyle="round,pad=0.3"
+            )
         )
-    )
+    else:
+        fig.text(1.10, 1.00, "- - -合格ライン 70%")
 
     # 合格ライン
     pass_rate = 0.7
@@ -214,7 +240,6 @@ def render_evaluation_history(histories, show_detail=True):
     for h in reversed(histories):
 
         evaluation = normalize_evaluation(h)
-
         if not evaluation:
             continue
 

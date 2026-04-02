@@ -4,10 +4,9 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-import japanize_matplotlib
 
 # 日本語フォント
-matplotlib.rcParams['font.family'] = 'IPAexGothic'
+matplotlib.rcParams['font.family'] = 'DejaVu Sans'
 
 
 # ===============================

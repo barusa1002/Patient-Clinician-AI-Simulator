@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import os
+from datetime import datetime
 
 
 # ===============================
@@ -251,7 +252,16 @@ def render_evaluation_history(histories, show_detail=True):
         rate = achieved / total if total else 0
         passed = rate >= 0.7
 
-        timestamp = h.get("created_at") or h.get("timestamp", "日時不明")
+        raw_time = h.get("created_at") or h.get("timestamp")
+
+        if raw_time:
+            try:
+                dt = datetime.fromisoformat(raw_time.replace("Z", ""))
+                timestamp = dt.strftime("%Y-%m-%d %H:%M")
+            except:
+                timestamp = raw_time
+        else:
+            timestamp = "日時不明"
         scenario = str(h.get("scenario", "")).strip()
 
         with st.expander(f"{timestamp}｜{scenario}"):
@@ -269,7 +279,8 @@ def render_evaluation_history(histories, show_detail=True):
 
             st.markdown("### ⚠ 不足項目")
             for m in evaluation.get("missing", []):
-                st.markdown(f"- {m['item']}")
+                item = m.get("item", "不明")
+                st.markdown(f"- {item}")
 
             if show_detail:
                 st.markdown("### 🧪 各評価項目")

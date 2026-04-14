@@ -1,10 +1,8 @@
 # ui_settings.py
 import streamlit as st
-
-from auth import update_user_id, update_password
+from db import supabase, get_current_user
 from evaluation import load_user_evaluations
 
-# ★ 追加（超重要）
 from ui_evaluation_viewer import (
     render_radar_chart,
     render_evaluation_history
@@ -15,34 +13,23 @@ def render_settings_page():
 
     st.header("⚙️ ユーザー設定")
 
-    user_id = st.session_state.get("user_id")
-    if not user_id:
+    user = get_current_user()
+
+    if not user:
         st.error("ログイン情報が見つかりません")
         return
 
+    user_id = user.id
+    email = user.email
+
+    # ===============================
+    # アカウント情報
+    # ===============================
     st.subheader("👤 アカウント情報")
-    st.markdown(f"**現在のID**： `{user_id}`")
+    st.markdown(f"**メールアドレス**： `{email}`")
 
     # ===============================
-    # ID変更
-    # ===============================
-    st.markdown("### 🆔 ID変更")
-    new_id = st.text_input("新しいID").strip()
-
-    if st.button("IDを変更"):
-        if not new_id:
-            st.error("新しいIDを入力してください")
-
-        elif update_user_id(user_id, new_id):
-            st.session_state.user_id = new_id
-            st.session_state.username = new_id
-            st.success("IDを変更しました")
-            st.rerun()
-        else:
-            st.error("そのIDは使用できません")
-
-    # ===============================
-    # パスワード変更
+    # パスワード変更（Auth版）
     # ===============================
     st.subheader("🔐 パスワード変更")
 
@@ -52,11 +39,19 @@ def render_settings_page():
     if st.button("パスワードを変更", key="settings_change_pass_btn"):
         if not new_password1 or not new_password2:
             st.error("パスワードを入力してください")
+
         elif new_password1 != new_password2:
             st.error("パスワードが一致しません")
+
         else:
-            update_password(user_id, new_password1)
-            st.success("パスワードを変更しました")
+            try:
+                supabase.auth.update_user({
+                    "password": new_password1
+                })
+                st.success("パスワードを変更しました")
+
+            except Exception as e:
+                st.error(f"変更に失敗しました: {e}")
 
     # ===============================
     # 音声設定
@@ -66,14 +61,14 @@ def render_settings_page():
 
     st.session_state.autoplay_enabled = st.checkbox(
         "音声を自動再生する",
-        value=st.session_state.autoplay_enabled
+        value=st.session_state.get("autoplay_enabled", True)
     )
 
     st.session_state.speech_speed = st.radio(
         "話速",
         ["ゆっくり", "ふつう", "はやい"],
         index=["ゆっくり", "ふつう", "はやい"].index(
-            st.session_state.speech_speed
+            st.session_state.get("speech_speed", "ふつう")
         )
     )
 

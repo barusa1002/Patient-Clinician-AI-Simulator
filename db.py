@@ -9,8 +9,8 @@ import streamlit as st
 @st.cache_resource
 def get_supabase() -> Client:
     try:
-        url = st.secrets["SUPABASE_URL"]
-        key = st.secrets["SUPABASE_KEY"]
+        url = st.secrets["https://rhwejvrxcdsblzbtyvdu.supabase.co"]
+        key = st.secrets["sb_publishable_BN1cbBGuL1NJs2j4Mf02DA_DKatk3u2"]
 
         client = create_client(url, key)
         return client

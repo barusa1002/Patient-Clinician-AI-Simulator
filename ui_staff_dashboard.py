@@ -1,32 +1,23 @@
 #ui_staff_dashboard.py
 import streamlit as st
-from supabase import create_client
-
+from db import supabase, get_current_user
 from ui_evaluation_viewer import (
     render_radar_chart,
     render_evaluation_history
 )
 
-# ===============================
-# Supabase接続
-# ===============================
-url = st.secrets["SUPABASE_URL"]
-key = st.secrets["SUPABASE_KEY"]
-
-supabase = create_client(url, key)
-
 
 # ===============================
-# 全評価取得（Supabase）
+# 全評価取得（RLS前提）
 # ===============================
 def load_all_evaluations():
 
-    response = supabase.table("evaluations") \
+    res = supabase.table("evaluations") \
         .select("*") \
         .order("created_at", desc=True) \
         .execute()
 
-    return response.data
+    return res.data
 
 
 # ===============================
@@ -57,6 +48,29 @@ def render_staff_dashboard():
 
     st.title("👨‍🏫 教員ダッシュボード")
 
+    # ===============================
+    # 権限チェック（超重要）
+    # ===============================
+    user = get_current_user()
+
+    if not user:
+        st.error("ログインしてください")
+        return
+
+    profile = supabase.table("profiles") \
+        .select("role") \
+        .eq("id", user.id) \
+        .execute()
+
+    role = profile.data[0]["role"] if profile.data else "student"
+
+    if role != "teacher":
+        st.error("このページにアクセスする権限がありません")
+        return
+
+    # ===============================
+    # データ取得
+    # ===============================
     all_evaluations = load_all_evaluations()
 
     if not all_evaluations:
@@ -71,7 +85,7 @@ def render_staff_dashboard():
     # 学生選択
     # ===============================
     selected_student = st.selectbox(
-        "学生を選択",
+        "学生を選択（user_id）",
         student_ids
     )
 

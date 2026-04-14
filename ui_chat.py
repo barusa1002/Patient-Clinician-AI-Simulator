@@ -2,6 +2,7 @@
 import streamlit as st
 import io
 import json
+from db import get_current_user
 
 from audio import speak_text, play_audio
 from evaluation import (
@@ -167,14 +168,19 @@ def render_chat_page(
         # =============================
         # 保存
         # =============================
+        user = get_current_user()
+        
+        if not user:
+            st.error("ログイン状態が無効です")
+            return
+        
         save_evaluation(
-            user_id=st.session_state["user_id"],
+            user_id=user.id,
             scenario=scenario,
             subscenario=subscenario,
             chat_history=st.session_state.chat_history,
-            evaluation_text=evaluation_json   # ← ここ重要
+            evaluation_text=evaluation_json
         )
-
 
         # =============================
         # 表示

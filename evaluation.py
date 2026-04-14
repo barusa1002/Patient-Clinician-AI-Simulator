@@ -308,15 +308,19 @@ JSON以外の文章は絶対に出力しない。
 # ==========================================================
 def save_evaluation(user_id, scenario, subscenario, chat_history, evaluation_text):
 
-    supabase.table("evaluations").insert({
-        "user_id": user_id,
-        "scenario": scenario,
-        "subscenario": subscenario,
-        "evaluation": {
-            "chat_history": chat_history,
-            "result": evaluation_text
-        }
-    }).execute()
+    try:
+        supabase.table("evaluations").insert({
+            "user_id": user_id,
+            "scenario": scenario,
+            "subscenario": subscenario,
+            "evaluation": {
+                "chat_history": chat_history,
+                "result": evaluation_text
+            }
+        }).execute()
+
+    except Exception as e:
+        print(f"保存エラー: {e}")
 
 # ==========================================================
 # 個人評価取得
@@ -351,12 +355,14 @@ def load_all_students_evaluations():
         if uid not in result:
             result[uid] = []
 
+        eval_data = row.get("evaluation", {})
+
         result[uid].append({
             "timestamp": row["created_at"],
-            "scenario": row["scenario"],
-            "subscenario": row["subscenario"],
-            "chat_history": row["chat_history"],   # ← ここ変わる
-            "evaluation": row["evaluation"]        # ← そのまま使える
+            "scenario": row.get("scenario"),
+            "subscenario": row.get("subscenario"),
+            "chat_history": eval_data.get("chat_history"),
+            "evaluation": eval_data.get("result")
         })
 
     return result

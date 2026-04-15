@@ -14,10 +14,20 @@ def create_user(email, password):
             "password": password
         })
 
+        # ✅ ユーザー作成成功
         if res.user:
+
+            user_id = res.user.id
+
+            # ✅ profilesテーブル作成（超重要）
+            supabase.table("profiles").insert({
+                "id": user_id,
+                "role": "student"
+            }).execute()
+
             return True
-        else:
-            return False
+
+        return False
 
     except Exception as e:
         st.error(f"ユーザー作成エラー: {e}")

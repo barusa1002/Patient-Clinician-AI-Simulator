@@ -21,7 +21,8 @@ def create_user(email, password):
             supabase.table("profiles").upsert({
                 "id": user_id,
                 "role": "student",
-                "tutorial_done": False
+                "tutorial_done": False,
+                "email": email
             }).execute()
 
             return True

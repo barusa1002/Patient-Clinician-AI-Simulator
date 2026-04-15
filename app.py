@@ -103,16 +103,6 @@ if (
     run_tutorial()
 
 # ==========================================================
-# スマホ判定
-# ==========================================================
-if "is_mobile" not in st.session_state:
-    user_agent = st.context.headers.get("user-agent", "").lower()
-    st.session_state.is_mobile = any(
-        keyword in user_agent
-        for keyword in ["iphone", "android", "ipad"]
-    )
-
-# ==========================================================
 # ページ管理
 # ==========================================================
 if "page" not in st.session_state:
@@ -144,7 +134,13 @@ if CLIENT is None:
 # その他import
 # ==========================================================
 from audio import speak_text, play_audio
-from utils import strip_thought, reset_session
+from utils import strip_thought, reset_session, detect_mobile
+
+# ==========================================================
+# スマホ判定
+# ==========================================================
+if "is_mobile" not in st.session_state:
+    st.session_state.is_mobile = detect_mobile()
 
 from evaluation import (
     build_evaluation_prompt,

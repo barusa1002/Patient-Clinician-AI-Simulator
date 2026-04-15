@@ -1,6 +1,9 @@
 #db.py
 from supabase import create_client, Client
 import streamlit as st
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # =========================
@@ -16,6 +19,7 @@ def get_supabase() -> Client:
         return client
 
     except Exception as e:
+        logger.error(f"get_supabase error: {e}")
         st.error(f"Supabase接続エラー: {e}")
         return None
 
@@ -35,7 +39,8 @@ def get_current_user():
             return res.user
         return None
 
-    except Exception:
+    except Exception as e:
+        logger.error(f"get_current_user error: {e}")
         return None
 
 
@@ -46,8 +51,8 @@ def logout():
 
     try:
         supabase.auth.sign_out()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"logout error: {e}")
 
     # Streamlit側セッションもクリア
     for key in list(st.session_state.keys()):

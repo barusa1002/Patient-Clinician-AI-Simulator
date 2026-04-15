@@ -30,6 +30,22 @@ def strip_thought(text: str) -> str:
 
 
 # ==========================================================
+# モバイル判定関数
+# ==========================================================
+MOBILE_KEYWORDS = ["iphone", "android", "ipad", "mobile", "blackberry", "windows phone"]
+
+def detect_mobile() -> bool:
+    """
+    User-Agentを解析してモバイル端末かどうか判定する
+    """
+    try:
+        user_agent = st.context.headers.get("user-agent", "").lower()
+        return any(keyword in user_agent for keyword in MOBILE_KEYWORDS)
+    except Exception:
+        return False
+
+
+# ==========================================================
 # セッションリセット関数
 # ==========================================================
 def reset_session():

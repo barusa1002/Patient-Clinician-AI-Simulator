@@ -2,6 +2,9 @@
 import streamlit as st
 from db import supabase
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # =========================
@@ -42,12 +45,13 @@ def create_user(email, password):
 
     except Exception as e:
         error_msg = str(e)
-    
+        logger.error(f"create_user error: {e}")
+
         if "User already registered" in error_msg:
             st.error("このメールアドレスは既に登録されています")
         else:
             st.error("登録に失敗しました")
-    
+
         return False
 
 
@@ -73,7 +77,8 @@ def authenticate(email, password):
             return True, res.user
         return False, None
 
-    except Exception:
+    except Exception as e:
+        logger.error(f"authenticate error: {e}")
         return False, None
 
 
@@ -93,7 +98,8 @@ def get_user_profile(user_id):
 
         return None
 
-    except Exception:
+    except Exception as e:
+        logger.error(f"get_user_profile error: {e}")
         return None
 
 

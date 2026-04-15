@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 from datetime import datetime
-
+st.write("DEBUG role:", st.session_state.get("role"))
 # ==========================================================
 # ページ設定
 # ==========================================================

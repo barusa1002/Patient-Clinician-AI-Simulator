@@ -48,9 +48,13 @@ def finish_tutorial():
     if not user_id:
         return
 
-    supabase.table("profiles").update({
-        "tutorial_done": True
-    }).eq("id", user_id).execute()
+    try:
+        supabase.table("profiles").update({
+            "tutorial_done": True
+        }).eq("id", user_id).execute()
+
+    except Exception as e:
+        st.error(f"DB更新失敗: {e}")
 
 
 # -----------------------------

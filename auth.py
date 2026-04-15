@@ -9,40 +9,40 @@ from db import supabase
 def create_user(email, password):
 
     try:
-        # ① ユーザー作成
         res = supabase.auth.sign_up({
             "email": email,
             "password": password
         })
 
-        if not res.user:
+        # 👇 これ超重要
+        st.write("FULL RESPONSE:", res)
+
+        if res.user:
+            st.success("Auth成功")
+
+            user_id = res.user.id
+            st.write("USER ID:", user_id)
+
+            try:
+                supabase.table("profiles").insert({
+                    "id": user_id,
+                    "role": "student"
+                }).execute()
+
+                st.success("profiles作成成功")
+
+            except Exception as e:
+                st.error(f"profiles insert失敗: {e}")
+
+            return True
+
+        else:
+            st.error("❌ userがNone（Auth失敗）")
             return False
-
-        # ② すぐログイン（これが超重要）
-        login_res = supabase.auth.sign_in_with_password({
-            "email": email,
-            "password": password
-        })
-
-        if not login_res.user:
-            st.error("ログインに失敗しました")
-            return False
-
-        user_id = login_res.user.id
-
-        # ③ profiles作成（ログイン状態で実行）
-        supabase.table("profiles").insert({
-            "id": user_id,
-            "role": "student"
-        }).execute()
-
-        return True
 
     except Exception as e:
-        st.error(f"ユーザー作成エラー: {e}")
+        st.error(f"❌ Authエラー: {e}")
         return False
-
-
 # =========================
 # staff作成（同じでOK）
 # =========================

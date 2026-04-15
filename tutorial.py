@@ -43,11 +43,14 @@ def finish_tutorial():
     st.session_state.first_visit = False
     st.session_state.tutorial_step = 0
 
-    username = st.session_state.username
+    user_id = st.session_state.get("user_id")
 
-    supabase.table("users").update({
+    if not user_id:
+        return
+
+    supabase.table("profiles").update({
         "tutorial_done": True
-    }).eq("id", username).execute()
+    }).eq("id", user_id).execute()
 
 
 # -----------------------------

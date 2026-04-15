@@ -1,9 +1,10 @@
+#app.py
 import streamlit as st
 import os
 from datetime import datetime
 
 # ==========================================================
-# ページ設定
+# ページ設定（⚠️絶対に一番上）
 # ==========================================================
 st.set_page_config(
     page_title="患者・医療従事者役 AI シミュレーター",
@@ -29,7 +30,7 @@ from session import init_session_state
 init_session_state()
 
 # ==========================================================
-# Supabase Auth（最重要）
+# Supabase Auth
 # ==========================================================
 from db import get_current_user, logout, supabase
 from auth import login_screen
@@ -40,19 +41,17 @@ if not user:
     login_screen()
     st.stop()
 
+# セッションに基本情報保存
 st.session_state.user_id = user.id
 st.session_state.email = user.email
 
 # ==========================================================
-# role取得（RLSと一致）
+# 🔥 role & tutorial取得（最重要）
 # ==========================================================
 profile = supabase.table("profiles") \
     .select("*") \
     .eq("id", user.id) \
     .execute()
-
-# デバッグ
-st.write("PROFILE DEBUG:", profile.data)
 
 if profile.data:
     st.session_state.role = profile.data[0].get("role", "student")
@@ -60,8 +59,9 @@ if profile.data:
 else:
     st.session_state.role = "student"
     st.session_state.tutorial_done = False
+
 # ==========================================================
-# タイトル・ログアウト
+# タイトル
 # ==========================================================
 st.title("患者・医療従事者役 AI シミュレーター")
 
@@ -238,6 +238,6 @@ elif st.session_state.page == "settings":
 elif st.session_state.page == "staff_dashboard":
 
     if st.session_state.get("role") != "staff":
-        st.error("このページは教員専用です")
+        st.error("このページにアクセスする権限がありません")
     else:
         render_staff_dashboard()

@@ -96,7 +96,10 @@ st.title("患者・医療従事者役 AI シミュレーター")
 # ==========================================================
 from tutorial import run_tutorial
 
-if not st.session_state.get("tutorial_done", False):
+if (
+    not st.session_state.get("tutorial_done", False)
+    or st.session_state.get("show_tutorial", False)
+):
     run_tutorial()
     st.stop()
 

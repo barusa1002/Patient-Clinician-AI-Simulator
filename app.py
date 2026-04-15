@@ -101,7 +101,6 @@ if (
     or st.session_state.get("show_tutorial", False)
 ):
     run_tutorial()
-    st.stop()
 
 # ==========================================================
 # スマホ判定

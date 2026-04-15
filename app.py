@@ -40,6 +40,9 @@ if not user:
     login_screen()
     st.stop()
 
+st.session_state.user_id = user.id
+st.session_state.email = user.email
+
 # ==========================================================
 # role取得（RLSと一致）
 # ==========================================================

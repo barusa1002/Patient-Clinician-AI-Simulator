@@ -64,7 +64,7 @@ def render_staff_dashboard():
 
     role = profile.data[0]["role"] if profile.data else "student"
 
-    if role != "teacher":
+    if role != "staff":
         st.error("このページにアクセスする権限がありません")
         return
 

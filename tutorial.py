@@ -46,23 +46,15 @@ def finish_tutorial():
     user_id = st.session_state.get("user_id")
 
     if not user_id:
-        st.error("user_idがない")
         return
 
     try:
-        res = supabase.table("profiles").update({
+        supabase.table("profiles").update({
             "tutorial_done": True
         }).eq("id", user_id).execute()
 
-        st.write("UPDATE RESULT:", res)
-
-        if res.data:
-            st.success("DB更新成功")
-        else:
-            st.warning("DB更新されてない（RLSの可能性大）")
-
     except Exception as e:
-        st.error(f"DB更新失敗: {e}")
+        st.error(f"チュートリアル更新エラー: {e}")
 
 
 # -----------------------------

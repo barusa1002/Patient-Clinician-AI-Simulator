@@ -55,8 +55,7 @@ def authenticate(email, password):
         else:
             return False, None
 
-    except Exception as e:
-        st.error(f"ログインエラー: {e}")
+    except Exception:
         return False, None
 
 

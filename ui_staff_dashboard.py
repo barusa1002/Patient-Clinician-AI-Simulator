@@ -7,16 +7,31 @@ from ui_evaluation_viewer import (
 )
 
 # ===============================
-# 評価＋ユーザー情報取得
+# 評価＋ユーザー情報取得（JOINしない）
 # ===============================
 def load_all_evaluations_with_profile():
 
-    res = supabase.table("evaluations") \
-        .select("*, profiles(email)") \
+    # ① evaluations取得
+    eval_res = supabase.table("evaluations") \
+        .select("*") \
         .order("created_at", desc=True) \
         .execute()
 
-    return res.data
+    evaluations = eval_res.data or []
+
+    # ② profiles取得
+    prof_res = supabase.table("profiles") \
+        .select("id, email") \
+        .execute()
+
+    profiles = {p["id"]: p.get("email", "不明") for p in (prof_res.data or [])}
+
+    # ③ email付与
+    for e in evaluations:
+        uid = e.get("user_id")
+        e["email"] = profiles.get(uid, "不明ユーザー")
+
+    return evaluations
 
 
 # ===============================
@@ -28,9 +43,7 @@ def group_by_user(evaluations):
 
     for e in evaluations:
         user_id = e.get("user_id")
-        profile = e.get("profiles") or {}
-
-        email = profile.get("email", "不明ユーザー")
+        email = e.get("email", "不明ユーザー")
 
         if not user_id:
             continue
@@ -114,7 +127,7 @@ def render_staff_dashboard():
     # ===============================
     st.markdown("### 🔍 絞り込み")
 
-    # 日付一覧
+    # 日付
     dates = [
         e.get("created_at", "")[:10]
         for e in evaluations if e.get("created_at")
@@ -126,7 +139,7 @@ def render_staff_dashboard():
         ["すべて"] + unique_dates
     )
 
-    # シナリオ一覧
+    # シナリオ
     scenarios = [
         e.get("scenario", "不明")
         for e in evaluations
@@ -173,7 +186,7 @@ def render_staff_dashboard():
     )
 
     # ===============================
-    # 戻るボタン
+    # 戻る
     # ===============================
     st.markdown("---")
 

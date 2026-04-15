@@ -60,6 +60,18 @@ def run_tutorial():
 
     init_tutorial()
 
+    user_id = st.session_state.get("user_id")
+
+    # DBからも確認（重要）
+    if user_id:
+        res = supabase.table("profiles") \
+            .select("tutorial_done") \
+            .eq("id", user_id) \
+            .execute()
+
+        if res.data and res.data[0].get("tutorial_done"):
+            st.session_state.tutorial_done = True
+
     if st.session_state.tutorial_done:
         return
 

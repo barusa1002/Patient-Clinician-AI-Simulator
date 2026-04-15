@@ -51,7 +51,10 @@ profile = supabase.table("profiles") \
     .eq("id", user.id) \
     .execute()
 
-role = profile.data[0]["role"] if profile.data else "student"
+if profile.data:
+    st.session_state.role = profile.data[0]["role"]
+else:
+    st.session_state.role = "student"
 
 # ==========================================================
 # タイトル・ログアウト
@@ -230,7 +233,7 @@ elif st.session_state.page == "settings":
 
 elif st.session_state.page == "staff_dashboard":
 
-    if role != "staff":
+    if st.session_state.get("role") != "staff":
         st.error("このページは教員専用です")
     else:
         render_staff_dashboard()

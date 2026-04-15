@@ -9,34 +9,34 @@ from db import supabase
 def create_user(email, password):
 
     try:
+        # ① ユーザー作成
         res = supabase.auth.sign_up({
             "email": email,
             "password": password
         })
 
-        st.write("DEBUG res:", res)
-        st.write("DEBUG user:", res.user)
+        if not res.user:
+            return False
 
-        if res.user:
+        # ② すぐログイン（これが超重要）
+        login_res = supabase.auth.sign_in_with_password({
+            "email": email,
+            "password": password
+        })
 
-            user_id = res.user.id
-            st.write("DEBUG user_id:", user_id)
+        if not login_res.user:
+            st.error("ログインに失敗しました")
+            return False
 
-            try:
-                result = supabase.table("profiles").insert({
-                    "id": user_id,
-                    "role": "student"
-                }).execute()
+        user_id = login_res.user.id
 
-                st.write("INSERT RESULT:", result)
+        # ③ profiles作成（ログイン状態で実行）
+        supabase.table("profiles").insert({
+            "id": user_id,
+            "role": "student"
+        }).execute()
 
-            except Exception as e:
-                st.error(f"❌ profiles insert エラー: {e}")
-                return False
-
-            return True
-
-        return False
+        return True
 
     except Exception as e:
         st.error(f"ユーザー作成エラー: {e}")

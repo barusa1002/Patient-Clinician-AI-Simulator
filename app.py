@@ -230,7 +230,7 @@ elif st.session_state.page == "settings":
 
 elif st.session_state.page == "staff_dashboard":
 
-    if role != "teacher":
+    if role != "staff":
         st.error("このページは教員専用です")
     else:
         render_staff_dashboard()

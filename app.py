@@ -2,6 +2,7 @@
 import streamlit as st
 import os
 from datetime import datetime
+from datetime import timedelta
 
 # ==========================================================
 # ページ設定（⚠️絶対に一番上）
@@ -40,6 +41,30 @@ user = get_current_user()
 if not user:
     login_screen()
     st.stop()
+
+# ==========================================================
+# ⏱ 自動ログアウト
+# ==========================================================
+TIMEOUT_MINUTES = 30  # ←ここで変更
+
+def check_auto_logout():
+    now = datetime.now()
+
+    last_activity = st.session_state.get("last_activity")
+
+    if last_activity:
+        elapsed = now - last_activity
+
+        if elapsed > timedelta(minutes=TIMEOUT_MINUTES):
+            st.warning("一定時間操作がなかったためログアウトしました")
+            logout()
+            st.session_state.clear()
+            st.rerun()
+
+    # 毎回更新（操作ありとみなす）
+    st.session_state.last_activity = now
+
+check_auto_logout()
 
 # セッションに基本情報保存
 st.session_state.user_id = user.id

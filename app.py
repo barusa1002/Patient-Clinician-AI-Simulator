@@ -53,9 +53,10 @@ profile = supabase.table("profiles") \
     .eq("id", user.id) \
     .execute()
 
-if profile.data:
-    st.session_state.role = profile.data[0].get("role", "student")
-    st.session_state.tutorial_done = profile.data[0].get("tutorial_done", False)
+if profile.data and len(profile.data) > 0:
+    row = profile.data[0]
+    st.session_state.role = row.get("role") or "student"
+    st.session_state.tutorial_done = row.get("tutorial_done") is True
 else:
     st.session_state.role = "student"
     st.session_state.tutorial_done = False
@@ -72,6 +73,7 @@ from tutorial import run_tutorial
 
 if not st.session_state.get("tutorial_done", False):
     run_tutorial()
+    st.stop()
 
 # ==========================================================
 # スマホ判定

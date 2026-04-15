@@ -1,19 +1,18 @@
 #ui_staff_dashboard.py
 import streamlit as st
-from db import supabase, get_current_user
+from db import supabase
 from ui_evaluation_viewer import (
     render_radar_chart,
     render_evaluation_history
 )
 
-
 # ===============================
-# 全評価取得（RLS前提）
+# 評価＋ユーザー情報取得
 # ===============================
-def load_all_evaluations():
+def load_all_evaluations_with_profile():
 
     res = supabase.table("evaluations") \
-        .select("*") \
+        .select("*, profiles(email)") \
         .order("created_at", desc=True) \
         .execute()
 
@@ -29,49 +28,64 @@ def group_by_user(evaluations):
 
     for e in evaluations:
         user_id = e.get("user_id")
+        profile = e.get("profiles") or {}
+
+        email = profile.get("email", "不明ユーザー")
 
         if not user_id:
             continue
 
         if user_id not in grouped:
-            grouped[user_id] = []
+            grouped[user_id] = {
+                "email": email,
+                "data": []
+            }
 
-        grouped[user_id].append(e)
+        grouped[user_id]["data"].append(e)
 
     return grouped
 
 
 # ===============================
-# ダッシュボード
+# フィルタ処理
+# ===============================
+def apply_filters(evaluations, selected_date, selected_scenario):
+
+    filtered = evaluations
+
+    if selected_date != "すべて":
+        filtered = [
+            e for e in filtered
+            if e.get("created_at", "").startswith(selected_date)
+        ]
+
+    if selected_scenario != "すべて":
+        filtered = [
+            e for e in filtered
+            if e.get("scenario") == selected_scenario
+        ]
+
+    return filtered
+
+
+# ===============================
+# メインUI
 # ===============================
 def render_staff_dashboard():
 
     st.title("👨‍🏫 教員ダッシュボード")
 
     # ===============================
-    # 権限チェック（超重要）
+    # 権限チェック
     # ===============================
-    user = get_current_user()
-
-    if not user:
-        st.error("ログインしてください")
-        return
-
-    profile = supabase.table("profiles") \
-        .select("role") \
-        .eq("id", user.id) \
-        .execute()
-
-    role = profile.data[0]["role"] if profile.data else "student"
-
-    if role != "staff":
+    if st.session_state.get("role") != "staff":
         st.error("このページにアクセスする権限がありません")
         return
 
     # ===============================
     # データ取得
     # ===============================
-    all_evaluations = load_all_evaluations()
+    all_evaluations = load_all_evaluations_with_profile()
 
     if not all_evaluations:
         st.info("評価データがまだありません")
@@ -79,20 +93,60 @@ def render_staff_dashboard():
 
     grouped_data = group_by_user(all_evaluations)
 
-    student_ids = list(grouped_data.keys())
+    # ===============================
+    # 学生選択（email表示）
+    # ===============================
+    student_options = {
+        f"{v['email']} ({k[:6]})": k
+        for k, v in grouped_data.items()
+    }
 
-    # ===============================
-    # 学生選択
-    # ===============================
-    selected_student = st.selectbox(
-        "学生を選択（user_id）",
-        student_ids
+    selected_label = st.selectbox(
+        "👤 学生を選択",
+        list(student_options.keys())
     )
 
-    evaluations = grouped_data.get(selected_student, [])
+    selected_user_id = student_options[selected_label]
+    evaluations = grouped_data[selected_user_id]["data"]
+
+    # ===============================
+    # フィルタUI
+    # ===============================
+    st.markdown("### 🔍 絞り込み")
+
+    # 日付一覧
+    dates = [
+        e.get("created_at", "")[:10]
+        for e in evaluations if e.get("created_at")
+    ]
+    unique_dates = sorted(list(set(dates)))
+
+    selected_date = st.selectbox(
+        "📅 日付",
+        ["すべて"] + unique_dates
+    )
+
+    # シナリオ一覧
+    scenarios = [
+        e.get("scenario", "不明")
+        for e in evaluations
+    ]
+    unique_scenarios = sorted(list(set(scenarios)))
+
+    selected_scenario = st.selectbox(
+        "📘 シナリオ",
+        ["すべて"] + unique_scenarios
+    )
+
+    # フィルタ適用
+    evaluations = apply_filters(
+        evaluations,
+        selected_date,
+        selected_scenario
+    )
 
     if not evaluations:
-        st.warning("この学生には評価データがありません")
+        st.warning("条件に一致するデータがありません")
         return
 
     # ===============================
@@ -119,7 +173,7 @@ def render_staff_dashboard():
     )
 
     # ===============================
-    # 戻る
+    # 戻るボタン
     # ===============================
     st.markdown("---")
 

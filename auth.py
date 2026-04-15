@@ -40,7 +40,14 @@ def create_user(email, password):
 
         return False
 
-    except Exception:
+    except Exception as e:
+        error_msg = str(e)
+    
+        if "User already registered" in error_msg:
+            st.error("このメールアドレスは既に登録されています")
+        else:
+            st.error("登録に失敗しました")
+    
         return False
 
 

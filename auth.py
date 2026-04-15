@@ -14,35 +14,22 @@ def create_user(email, password):
             "password": password
         })
 
-        # 👇 これ超重要
-        st.write("FULL RESPONSE:", res)
-
         if res.user:
-            st.success("Auth成功")
-
             user_id = res.user.id
-            st.write("USER ID:", user_id)
 
-            try:
-                supabase.table("profiles").upsert({
-                    "id": user_id,
-                    "role": "student",
-                    "tutorial_done": False
-                }).execute()
-
-                st.success("profiles作成成功")
-
-            except Exception as e:
-                st.error(f"profiles insert失敗: {e}")
+            # profiles作成（存在してもOK）
+            supabase.table("profiles").upsert({
+                "id": user_id,
+                "role": "student",
+                "tutorial_done": False
+            }).execute()
 
             return True
 
-        else:
-            st.error("❌ userがNone（Auth失敗）")
-            return False
+        return False
 
     except Exception as e:
-        st.error(f"❌ Authエラー: {e}")
+        st.error(f"ユーザー作成エラー: {e}")
         return False
 # =========================
 # staff作成（同じでOK）

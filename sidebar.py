@@ -1,6 +1,8 @@
 #sidebar.py
 import streamlit as st
 from utils import reset_session
+from db import logout
+
 
 def render_sidebar(
     SCENARIOS,
@@ -20,11 +22,11 @@ def render_sidebar(
     )
 
     selected = SCENARIO_PROMPTS[mode][scenario][subscenario]
-    from datetime import datetime
 
+    from datetime import datetime
     today = datetime.now().strftime("%Y年%m月%d日")
 
-    # sidebar表示専用（selectedは壊さない）
+    # 表示用（selectedは壊さない）
     task_info_display = {}
     for k, v in selected["task_info"].items():
         if isinstance(v, str):
@@ -32,29 +34,30 @@ def render_sidebar(
         else:
             task_info_display[k] = v
 
-
     # ============================
-    # 情報表示
+    # 課題詳細（折りたたみ）
     # ============================
-    st.sidebar.markdown("### 📘 課題内容")
-    st.sidebar.write(task_info_display["課題内容"])
+    with st.sidebar.expander("📘 課題詳細", expanded=True):
 
-    st.sidebar.markdown("### 👤 患者情報")
-    st.sidebar.text(task_info_display["患者情報"])
+        st.markdown("### 📘 課題内容")
+        st.write(task_info_display["課題内容"])
 
-    st.sidebar.markdown("### 🧑‍⚕️ 医療従事者情報")
-    st.sidebar.text(task_info_display["医療従事者情報"])
+        st.markdown("### 👤 患者情報")
+        st.text(task_info_display["患者情報"])
 
-    st.sidebar.markdown("### 💊 処方内容")
-    st.sidebar.text(task_info_display["処方内容"])
+        st.markdown("### 🧑‍⚕️ 医療従事者情報")
+        st.text(task_info_display["医療従事者情報"])
 
-    st.sidebar.markdown(f"### 🕒 日時\n{current_datetime}")
+        st.markdown("### 💊 処方内容")
+        st.text(task_info_display["処方内容"])
+
+        st.markdown(f"### 🕒 日時\n{current_datetime}")
 
     # ============================
     # セッションリセット
     # ============================
     st.sidebar.markdown("---")
-    if st.sidebar.button("🔄 セッションをリセット", key="reset_session"):
+    if st.sidebar.button("🔄 セッションをリセット"):
         reset_session()
         st.rerun()
 
@@ -62,96 +65,78 @@ def render_sidebar(
     # AI評価
     # ============================
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 📝 AI評価")
+    st.sidebar.subheader("📝 AI評価")
 
     if st.sidebar.button(
         "AIによる評価を実行",
-        disabled=len(st.session_state.get("chat_history", [])) == 0,
-        key="run_eval"
+        disabled=len(st.session_state.get("chat_history", [])) == 0
     ):
         st.session_state.run_evaluation = True
 
     # ============================
-    # 設定メニュー
+    # 設定
     # ============================
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### ⚙️ 設定")
+    st.sidebar.subheader("⚙️ 設定")
 
-    if st.sidebar.button("⚙️ ユーザー設定", key="go_settings"):
+    if st.sidebar.button("⚙️ ユーザー設定"):
         st.session_state.page = "settings"
 
-    if st.sidebar.button("⬅ チャットに戻る", key="go_chat"):
+    if st.sidebar.button("⬅ チャットに戻る"):
         st.session_state.page = "chat"
 
     # ============================
-    # 🔐 教職員専用メニュー
+    # 教員専用
     # ============================
-    st.sidebar.markdown("---")
     if st.session_state.get("role") == "staff":
-        st.sidebar.markdown("### 👨‍🏫 教職員メニュー")
+        st.sidebar.markdown("---")
+        st.sidebar.subheader("👨‍🏫 教職員メニュー")
+
         if st.sidebar.button("📊 学生評価一覧"):
             st.session_state.page = "staff_dashboard"
             st.rerun()
-    
+
     # ============================
     # ログイン情報
     # ============================
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 👤 ログイン中")
-    st.sidebar.write(f"ユーザー：**{st.session_state.get('username', '')}**")
 
-    if st.sidebar.button("🚪 ログアウト", key="logout"):
-        st.session_state.logged_in = False
-        st.session_state.username = None
-        st.session_state.user_id = None
-        st.session_state.chat_history = []
-        st.session_state.page = "chat"
-        st.rerun()
+    with st.sidebar.expander("👤 ログイン情報", expanded=True):
+        st.write(f"**{st.session_state.get('email', '')}**")
 
-    st.sidebar.markdown("---")
+        if st.button("🚪 ログアウト"):
+            logout()
+            st.rerun()
 
-    st.sidebar.markdown("### 📩 お問い合わせ")
-    st.sidebar.markdown(
-    """
-    不具合や質問がある場合は  
-    以下までご連絡ください。
+    # ============================
+    # お問い合わせ
+    # ============================
+    with st.sidebar.expander("📩 お問い合わせ"):
+        st.markdown("""
+不具合や質問がある場合は  
+✉ a22071@ug.shoyaku.ac.jp
+""")
 
-    ✉ a22071@ug.shoyaku.ac.jp
-    """
-    )
+    # ============================
+    # アンケート
+    # ============================
+    with st.sidebar.expander("📝 使用後アンケート"):
+        st.markdown("[アンケートに回答する](https://forms.gle/JDxUAMchNLXoYsCYA)")
+        st.image("images/form.png", use_container_width=True)
 
-    st.sidebar.markdown(
-    """
-    ### 📝 使用後アンケート
+    # ============================
+    # 開発者情報
+    # ============================
+    with st.sidebar.expander("🛠 開発者情報"):
+        st.markdown("""
+昭和薬科大学  
+薬学部 数理科学 瀧澤研究室  
 
-    以下のフォームからご回答ください👇  
-    [アンケートに回答する](https://forms.gle/JDxUAMchNLXoYsCYA)
-    """
-    )
+💊 患者・医療従事者役 AI シミュレーター  
 
-    st.sidebar.image(
-        "images/form.png",
-        caption="QRコードから回答できます",
-        use_container_width=True
-    )
-
-    st.sidebar.markdown("### 🛠 開発者情報")
-    st.sidebar.markdown(
-    """
-    昭和薬科大学  
-    薬学部 数理科学瀧澤研究室  
-    💊 患者・医療従事者役 AI シミュレーター  
-
-    開発：高嶋 貫多
-    """
-    )
+開発：高嶋 貫多
+""")
 
     st.sidebar.caption("Version 1.0")
 
     return mode, scenario, subscenario, selected
-
-
-
-
-
-

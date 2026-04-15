@@ -14,16 +14,25 @@ def create_user(email, password):
             "password": password
         })
 
-        # ✅ ユーザー作成成功
+        st.write("DEBUG res:", res)
+        st.write("DEBUG user:", res.user)
+
         if res.user:
 
             user_id = res.user.id
+            st.write("DEBUG user_id:", user_id)
 
-            # ✅ profilesテーブル作成（超重要）
-            supabase.table("profiles").insert({
-                "id": user_id,
-                "role": "student"
-            }).execute()
+            try:
+                result = supabase.table("profiles").insert({
+                    "id": user_id,
+                    "role": "student"
+                }).execute()
+
+                st.write("INSERT RESULT:", result)
+
+            except Exception as e:
+                st.error(f"❌ profiles insert エラー: {e}")
+                return False
 
             return True
 

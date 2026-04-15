@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 from datetime import datetime
-st.write("DEBUG role:", st.session_state.get("role"))
+
 # ==========================================================
 # ページ設定
 # ==========================================================
@@ -47,15 +47,19 @@ st.session_state.email = user.email
 # role取得（RLSと一致）
 # ==========================================================
 profile = supabase.table("profiles") \
-    .select("role") \
+    .select("*") \
     .eq("id", user.id) \
     .execute()
 
+# デバッグ
+st.write("PROFILE DEBUG:", profile.data)
+
 if profile.data:
-    st.session_state.role = profile.data[0]["role"]
+    st.session_state.role = profile.data[0].get("role", "student")
+    st.session_state.tutorial_done = profile.data[0].get("tutorial_done", False)
 else:
     st.session_state.role = "student"
-
+    st.session_state.tutorial_done = False
 # ==========================================================
 # タイトル・ログアウト
 # ==========================================================

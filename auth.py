@@ -124,8 +124,12 @@ def login_screen():
                 st.session_state.user_id = user_id
                 st.session_state.email = user.email
                 st.session_state.role = profile["role"] if profile else "student"
-                st.session_state.tutorial_done = profile.get("tutorial_done", False) if profile else False
-
+                if profile:
+                    st.session_state.role = profile.get("role", "student")
+                    st.session_state.tutorial_done = profile.get("tutorial_done") is True
+                else:
+                    st.session_state.role = "student"
+                    st.session_state.tutorial_done = False
                 st.success("ログイン成功")
                 st.rerun()
 

@@ -35,11 +35,13 @@ def prev_step():
 def skip_tutorial():
     st.session_state.tutorial_done = True
     st.session_state.first_visit = False
+    st.session_state.show_tutorial = False
 
 
 def finish_tutorial():
 
     st.session_state.tutorial_done = True
+    st.session_state.show_tutorial = False
     st.session_state.first_visit = False
     st.session_state.tutorial_step = 0
 
@@ -76,7 +78,7 @@ def run_tutorial():
         if res.data and res.data[0].get("tutorial_done"):
             st.session_state.tutorial_done = True
 
-    if st.session_state.tutorial_done:
+    if st.session_state.tutorial_done and not st.session_state.get("show_tutorial"):
         return
 
     step = st.session_state.tutorial_step

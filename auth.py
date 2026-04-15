@@ -1,6 +1,18 @@
 #auth.py
 import streamlit as st
 from db import supabase
+import re
+
+
+# =========================
+# バリデーション
+# =========================
+def is_valid_email(email):
+    return re.match(r"[^@]+@[^@]+\.[^@]+", email)
+
+
+def is_valid_password(password):
+    return len(password) >= 6
 
 
 # =========================
@@ -17,7 +29,6 @@ def create_user(email, password):
         if res.user:
             user_id = res.user.id
 
-            # profiles作成（存在してもOK）
             supabase.table("profiles").upsert({
                 "id": user_id,
                 "role": "student",
@@ -29,11 +40,12 @@ def create_user(email, password):
 
         return False
 
-    except Exception as e:
-        st.error(f"ユーザー作成エラー: {e}")
+    except Exception:
         return False
+
+
 # =========================
-# staff作成（同じでOK）
+# staff作成
 # =========================
 def create_staff_user(email, password):
     return create_user(email, password)
@@ -52,8 +64,7 @@ def authenticate(email, password):
 
         if res.user:
             return True, res.user
-        else:
-            return False, None
+        return False, None
 
     except Exception:
         return False, None
@@ -65,14 +76,17 @@ def authenticate(email, password):
 def get_user_profile(user_id):
 
     try:
-        res = supabase.table("profiles").select("*").eq("id", user_id).execute()
+        res = supabase.table("profiles") \
+            .select("*") \
+            .eq("id", user_id) \
+            .execute()
 
         if res.data:
             return res.data[0]
+
         return None
 
-    except Exception as e:
-        st.error(f"プロフィール取得エラー: {e}")
+    except Exception:
         return None
 
 
@@ -99,28 +113,35 @@ def login_screen():
 
         if st.button("ログイン", key="login_btn"):
 
-            ok, user = authenticate(email, password)
+            if not email:
+                st.error("メールアドレスを入力してください")
 
-            if ok:
-
-                user_id = user.id
-
-                profile = get_user_profile(user_id)
-
-                st.session_state.logged_in = True
-                st.session_state.user_id = user_id
-                st.session_state.email = user.email
-                if profile:
-                    st.session_state.role = profile.get("role", "student")
-                    st.session_state.tutorial_done = profile.get("tutorial_done", False)
-                else:
-                    st.session_state.role = "student"
-                    st.session_state.tutorial_done = False
-                st.success("ログイン成功")
-                st.rerun()
+            elif not password:
+                st.error("パスワードを入力してください")
 
             else:
-                st.error("メールアドレスまたはパスワードが違います")
+                ok, user = authenticate(email, password)
+
+                if ok:
+                    user_id = user.id
+                    profile = get_user_profile(user_id)
+
+                    st.session_state.logged_in = True
+                    st.session_state.user_id = user_id
+                    st.session_state.email = user.email
+
+                    if profile:
+                        st.session_state.role = profile.get("role", "student")
+                        st.session_state.tutorial_done = profile.get("tutorial_done", False)
+                    else:
+                        st.session_state.role = "student"
+                        st.session_state.tutorial_done = False
+
+                    st.success("ログイン成功")
+                    st.rerun()
+
+                else:
+                    st.error("メールアドレスまたはパスワードが違います")
 
     # ---------------------------
     # 新規登録
@@ -145,6 +166,15 @@ def login_screen():
             if not new_email:
                 st.error("メールアドレスを入力してください")
 
+            elif not is_valid_email(new_email):
+                st.error("正しいメールアドレス形式で入力してください")
+
+            elif not new_pass1:
+                st.error("パスワードを入力してください")
+
+            elif not is_valid_password(new_pass1):
+                st.error("パスワードは6文字以上で入力してください")
+
             elif new_pass1 != new_pass2:
                 st.error("パスワードが一致しません")
 
@@ -152,10 +182,12 @@ def login_screen():
                 st.error("研究利用への同意が必要です")
 
             else:
-                if create_user(new_email, new_pass1):
+                success = create_user(new_email, new_pass1)
+
+                if success:
                     st.success("登録完了！ログインしてください")
                 else:
-                    st.error("登録に失敗しました")
+                    st.error("登録に失敗しました（既に登録済みの可能性があります）")
 
     # ---------------------------
     # お知らせ

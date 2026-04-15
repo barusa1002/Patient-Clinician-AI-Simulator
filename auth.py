@@ -24,9 +24,10 @@ def create_user(email, password):
             st.write("USER ID:", user_id)
 
             try:
-                supabase.table("profiles").insert({
+                supabase.table("profiles").upsert({
                     "id": user_id,
-                    "role": "student"
+                    "role": "student",
+                    "tutorial_done": False
                 }).execute()
 
                 st.success("profiles作成成功")

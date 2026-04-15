@@ -110,7 +110,7 @@ def render_staff_dashboard():
     # 学生選択（email表示）
     # ===============================
     student_options = {
-        f"{v['email']} ({k[:6]})": k
+        v["email"]: k
         for k, v in grouped_data.items()
     }
 

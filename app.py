@@ -1,11 +1,10 @@
 #app.py
 import streamlit as st
 import os
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 # ==========================================================
-# ページ設定（⚠️絶対に一番上）
+# ページ設定（⚠️最上部）
 # ==========================================================
 st.set_page_config(
     page_title="患者・医療従事者役 AI シミュレーター",
@@ -45,11 +44,10 @@ if not user:
 # ==========================================================
 # ⏱ 自動ログアウト
 # ==========================================================
-TIMEOUT_MINUTES = 30  # ←ここで変更
+TIMEOUT_MINUTES = 30
 
 def check_auto_logout():
     now = datetime.now()
-
     last_activity = st.session_state.get("last_activity")
 
     if last_activity:
@@ -61,17 +59,19 @@ def check_auto_logout():
             st.session_state.clear()
             st.rerun()
 
-    # 毎回更新（操作ありとみなす）
+    # 毎回更新
     st.session_state.last_activity = now
 
 check_auto_logout()
 
+# ==========================================================
 # セッションに基本情報保存
+# ==========================================================
 st.session_state.user_id = user.id
 st.session_state.email = user.email
 
 # ==========================================================
-# 🔥 role & tutorial取得（最重要）
+# 🔥 role & tutorial取得
 # ==========================================================
 profile = supabase.table("profiles") \
     .select("*") \
@@ -92,7 +92,7 @@ else:
 st.title("患者・医療従事者役 AI シミュレーター")
 
 # ==========================================================
-# チュートリアル
+# チュートリアル（🔥最優先）
 # ==========================================================
 from tutorial import run_tutorial
 
@@ -159,11 +159,11 @@ from prompts import (
     SCENARIO_PROMPTS
 )
 
+# ==========================================================
+# 🔥 サイドバー（チュートリアル後に実行）
+# ==========================================================
 from sidebar import render_sidebar
 
-# ==========================================================
-# 現在日時
-# ==========================================================
 current_datetime = datetime.now().strftime("%Y年%m月%d日 %H時%M分")
 
 mode, scenario, subscenario, selected = render_sidebar(
@@ -176,7 +176,6 @@ mode, scenario, subscenario, selected = render_sidebar(
 # 日付テンプレ置換
 # ==========================================================
 import re
-from datetime import timedelta
 
 def replace_date_templates(text):
 

@@ -107,6 +107,7 @@ def render_settings_page():
     if st.button("📘 チュートリアルを見る"):
         st.session_state.show_tutorial = True
         st.session_state.tutorial_step = 0
+        st.session_state.page = "chat"
         st.rerun()
 
     # ===============================

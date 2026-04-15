@@ -23,13 +23,17 @@ def load_all_evaluations_with_profile():
     prof_res = supabase.table("profiles") \
         .select("id, email") \
         .execute()
-
-    profiles = {p["id"]: p.get("email", "不明") for p in (prof_res.data or [])}
-
-    # ③ email付与
+    
+    # 🔥 修正①：キーを統一
+    profiles = {
+        str(p["id"]).strip(): p.get("email", "不明")
+        for p in (prof_res.data or [])
+    }
+    
+    # 🔥 修正②：lookupも統一
     for e in evaluations:
-        uid = e.get("user_id")
-        e["email"] = profiles.get(uid, "不明ユーザー")
+        uid = str(e.get("user_id", "")).strip()
+        e["email"] = profiles.get(uid, f"不明ユーザー ({uid[:6]})")
 
     return evaluations
 

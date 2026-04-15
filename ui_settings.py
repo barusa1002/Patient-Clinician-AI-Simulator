@@ -105,7 +105,7 @@ def render_settings_page():
     st.write("チュートリアルをもう一度確認できます。")
 
     if st.button("📘 チュートリアルを見る"):
-        st.session_state.tutorial_done = False
+        st.session_state.show_tutorial = True
         st.session_state.tutorial_step = 0
         st.rerun()
 

@@ -364,6 +364,11 @@ def render_chat_page(
 
         if st.session_state.get("model_answer_text"):
             with st.expander("📖 模範的な会話例を見る", expanded=True):
-                st.markdown(st.session_state["model_answer_text"])
+                lines = [
+                    line.strip()
+                    for line in st.session_state["model_answer_text"].splitlines()
+                    if line.strip()
+                ]
+                st.markdown("\n\n".join(lines))
 
 

@@ -104,8 +104,10 @@ def render_chat_page(
 
         # 音声再生フラグ
         st.session_state["need_audio"] = True
-        # メッセージ送信時にヒントをリセット
+        # メッセージ送信時にヒント・模範解答・評価済みフラグをリセット
         st.session_state["hint_text"] = None
+        st.session_state["evaluation_done"] = False
+        st.session_state["model_answer_text"] = None
 
         st.rerun()
 
@@ -309,6 +311,59 @@ def render_chat_page(
             st.markdown("（総合評価なし）")
 
         st.session_state.run_evaluation = False
+        st.session_state["evaluation_done"] = True
 
+
+    # ==================================================
+    # 模範解答
+    # ==================================================
+    if st.session_state.get("evaluation_done"):
+
+        st.markdown("---")
+
+        if st.button("📖 模範解答を見る"):
+            checklist = EVALUATION_CHECKLISTS.get(scenario, [])
+            checklist_text = "\n".join(f"- {item}" for item in checklist)
+
+            model_answer_prompt = f"""
+あなたは薬学実習の指導教員です。
+以下のシナリオに対して、模範的な薬剤師と患者の会話例を生成してください。
+
+【シナリオ】
+{scenario} / {subscenario}
+
+【評価項目（すべてカバーすること）】
+{checklist_text}
+
+【表示形式】
+必ず以下の形式で、1行1発言として出力してください。
+薬剤師：「〇〇」
+患者：「〇〇」
+薬剤師：「〇〇」
+...
+
+【ルール】
+- すべての評価項目を自然な流れでカバーする
+- 丁寧で実践的な言葉遣いを使う
+- 会話形式のみ出力する（説明文は不要）
+- 日本語で出力する
+"""
+
+            with st.spinner("模範解答を生成中..."):
+                try:
+                    model_answer_session = start_chat(
+                        client=st.session_state.gemini_client,
+                        model_name=MODEL_NAME,
+                        system_prompt="あなたは薬学実習の指導教員です。模範的な薬剤師の会話例を生成します。"
+                    )
+                    st.session_state["model_answer_text"] = model_answer_session.send_message(
+                        model_answer_prompt
+                    ).text
+                except Exception:
+                    st.session_state["model_answer_text"] = "模範解答の生成に失敗しました。"
+
+        if st.session_state.get("model_answer_text"):
+            with st.expander("📖 模範的な会話例を見る", expanded=True):
+                st.markdown(st.session_state["model_answer_text"])
 
 

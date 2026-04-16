@@ -20,6 +20,7 @@ def render_chat_page(
     scenario,
     subscenario,
     chat_session,
+    selected,
 ):
     # スマホ判定（毎回取得）
     IS_MOBILE = st.session_state.get("is_mobile", False)
@@ -325,14 +326,21 @@ def render_chat_page(
             checklist = EVALUATION_CHECKLISTS.get(scenario, [])
             checklist_text = "\n".join(f"- {item}" for item in checklist)
 
+            task_info_text = "\n".join(
+                f"【{k}】\n{v}" for k, v in selected.get("task_info", {}).items()
+            )
+
             model_answer_prompt = f"""
 あなたは薬学実習の指導教員です。
-以下のシナリオに対して、模範的な薬剤師と患者の会話例を生成してください。
+以下のシナリオ情報に忠実に従い、模範的な薬剤師と患者の会話例を生成してください。
 
-【シナリオ】
+【課題名】
 {scenario} / {subscenario}
 
-【評価項目（すべてカバーすること）】
+【シナリオ詳細情報】
+{task_info_text}
+
+【評価チェックリスト（全項目を満たすこと）】
 {checklist_text}
 
 【表示形式】
@@ -343,10 +351,12 @@ def render_chat_page(
 ...
 
 【ルール】
-- すべての評価項目を自然な流れでカバーする
-- 丁寧で実践的な言葉遣いを使う
-- 会話形式のみ出力する（説明文は不要）
-- 日本語で出力する
+- シナリオ詳細情報に記載された患者情報・処方内容・症状をそのまま使うこと
+- 独自に患者情報や処方内容を作らないこと
+- 評価チェックリストの全項目を自然な流れでカバーすること
+- 丁寧で実践的な言葉遣いを使うこと
+- 会話形式のみ出力すること（説明文・前置きは不要）
+- 日本語で出力すること
 """
 
             with st.spinner("模範解答を生成中..."):

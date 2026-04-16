@@ -255,7 +255,8 @@ if st.session_state.page == "chat":
     render_chat_page(
         scenario=scenario,
         subscenario=subscenario,
-        chat_session=st.session_state.chat_session
+        chat_session=st.session_state.chat_session,
+        selected=selected
     )
 
 elif st.session_state.page == "settings":

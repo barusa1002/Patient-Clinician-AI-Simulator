@@ -8,6 +8,7 @@ from audio import speak_text, play_audio
 from evaluation import (
     build_evaluation_prompt,
     save_evaluation,
+    EVALUATION_CHECKLISTS,
 )
 from utils import strip_thought
 from llm import start_chat
@@ -103,9 +104,58 @@ def render_chat_page(
 
         # 音声再生フラグ
         st.session_state["need_audio"] = True
+        # メッセージ送信時にヒントをリセット
+        st.session_state["hint_text"] = None
 
         st.rerun()
 
+
+    # ==================================================
+    # ヒント機能
+    # ==================================================
+    has_history = len(st.session_state.chat_history) > 0
+
+    if st.button("💡 ヒントを見る", disabled=not has_history):
+        checklist = EVALUATION_CHECKLISTS.get(scenario, [])
+        checklist_text = "\n".join(f"- {item}" for item in checklist)
+
+        conversation = ""
+        for role, msg in st.session_state.chat_history:
+            speaker = "実習生" if role == "user" else "患者・医療者"
+            conversation += f"{speaker}：{msg}\n"
+
+        hint_prompt = f"""
+あなたは薬学実習のコーチです。
+以下の会話を見て、実習生が次に確認すべきことをヒントとして伝えてください。
+
+【シナリオ】
+{scenario} / {subscenario}
+
+【会話ログ】
+{conversation}
+
+【評価項目（参考）】
+{checklist_text}
+
+【ヒントのルール】
+- 答えを直接言わない
+- 「〜について確認してみましょう」のような柔らかい表現で促す
+- 1〜2文で簡潔にまとめる
+- 日本語で回答する
+"""
+
+        try:
+            hint_session = start_chat(
+                client=st.session_state.gemini_client,
+                model_name=MODEL_NAME,
+                system_prompt="あなたは薬学実習のコーチです。学生が自分で気づけるよう、直接答えを言わずにヒントを与えます。"
+            )
+            st.session_state["hint_text"] = hint_session.send_message(hint_prompt).text
+        except Exception:
+            st.session_state["hint_text"] = "ヒントの生成に失敗しました。"
+
+    if st.session_state.get("hint_text"):
+        st.info(st.session_state["hint_text"])
 
     # ==================================================
     # 評価実行

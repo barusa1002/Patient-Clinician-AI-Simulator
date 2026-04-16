@@ -119,7 +119,7 @@ def render_chat_page(
     has_history = len(st.session_state.chat_history) > 0
 
     if st.button("💡 ヒントを見る", disabled=not has_history):
-        checklist = EVALUATION_CHECKLISTS.get(scenario, [])
+        checklist = EVALUATION_CHECKLISTS.get(scenario, {})
         checklist_text = "\n".join(f"- {item}" for item in checklist)
 
         conversation = ""
@@ -323,8 +323,14 @@ def render_chat_page(
         st.markdown("---")
 
         if st.button("📖 模範解答を見る"):
-            checklist = EVALUATION_CHECKLISTS.get(scenario, [])
+            checklist = EVALUATION_CHECKLISTS.get(scenario, {})
             checklist_text = "\n".join(f"- {item}" for item in checklist)
+
+            phrases_text = "\n".join(
+                f"- {item}：「{phrase}」"
+                for item, phrase in checklist.items()
+                if phrase
+            )
 
             task_info_text = "\n".join(
                 f"【{k}】\n{v}" for k, v in selected.get("task_info", {}).items()
@@ -343,6 +349,9 @@ def render_chat_page(
 【評価チェックリスト（全項目を満たすこと）】
 {checklist_text}
 
+【各評価項目の模範セリフ（記載がある項目は必ずそのまま使うこと）】
+{phrases_text if phrases_text else "（なし）"}
+
 【表示形式】
 必ず以下の形式で、1行1発言として出力してください。
 薬剤師：「〇〇」
@@ -354,6 +363,7 @@ def render_chat_page(
 - シナリオ詳細情報に記載された患者情報・処方内容・症状をそのまま使うこと
 - 独自に患者情報や処方内容を作らないこと
 - 評価チェックリストの全項目を自然な流れでカバーすること
+- 模範セリフが指定されている項目は、その言葉をそのまま使うこと
 - 丁寧で実践的な言葉遣いを使うこと
 - 会話形式のみ出力すること（説明文・前置きは不要）
 - 日本語で出力すること

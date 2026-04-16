@@ -130,6 +130,8 @@ if CLIENT is None:
     st.error("Gemini APIキーが設定されていません")
     st.stop()
 
+st.session_state.gemini_client = CLIENT
+
 # ==========================================================
 # その他import
 # ==========================================================

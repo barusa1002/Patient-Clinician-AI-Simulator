@@ -10,6 +10,8 @@ from evaluation import (
     save_evaluation,
 )
 from utils import strip_thought
+from llm import start_chat
+from config import MODEL_NAME
 
 
 
@@ -116,12 +118,15 @@ def render_chat_page(
             st.session_state.chat_history
         )
 
-        raw_eval = None 
+        raw_eval = None
 
         try:
-            raw_eval = st.session_state.chat_session.send_message(
-                eval_prompt
-            ).text
+            eval_session = start_chat(
+                client=st.session_state.gemini_client,
+                model_name=MODEL_NAME,
+                system_prompt="あなたは薬学実習の評価者です。会話ログをもとに客観的な評価を行います。"
+            )
+            raw_eval = eval_session.send_message(eval_prompt).text
 
             start = raw_eval.find("{")
             end = raw_eval.rfind("}") + 1

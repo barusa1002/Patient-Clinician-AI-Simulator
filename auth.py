@@ -65,11 +65,14 @@ def create_staff_user(email, password):
 # =========================
 # パスワード再設定メール送信
 # =========================
+APP_URL = "https://patient-clinician-ai-simulator-bfyg3afpkfv4shabg4k8il.streamlit.app"
+
 def send_password_reset_email(email):
     try:
-        app_url = st.secrets.get("APP_URL", "")
-        options = {"redirect_to": app_url} if app_url else {}
-        supabase.auth.reset_password_for_email(email, options=options)
+        supabase.auth.reset_password_for_email(
+            email,
+            options={"redirect_to": APP_URL}
+        )
         return True
     except Exception as e:
         logger.error(f"send_password_reset_email error: {e}")

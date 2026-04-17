@@ -33,7 +33,7 @@ components.html("""
     var hash = window.location.hash;
     if (hash && hash.includes('type=recovery')) {
         var params = hash.substring(1);
-        window.location.replace(window.location.pathname + '?' + params);
+        window.location.replace('/?' + params);
     }
 })();
 </script>

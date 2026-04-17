@@ -63,6 +63,18 @@ def create_staff_user(email, password):
 
 
 # =========================
+# パスワード再設定メール送信
+# =========================
+def send_password_reset_email(email):
+    try:
+        supabase.auth.reset_password_for_email(email)
+        return True
+    except Exception as e:
+        logger.error(f"send_password_reset_email error: {e}")
+        return False
+
+
+# =========================
 # 認証（Auth）
 # =========================
 def authenticate(email, password):
@@ -155,6 +167,20 @@ def login_screen():
 
                 else:
                     st.error("メールアドレスまたはパスワードが違います")
+
+        with st.expander("パスワードをお忘れの方はこちら"):
+            reset_email = st.text_input("登録済みのメールアドレス", key="reset_email")
+            if st.button("パスワード再設定メールを送信", key="reset_btn"):
+                if not reset_email:
+                    st.error("メールアドレスを入力してください")
+                elif not is_valid_email(reset_email):
+                    st.error("正しいメールアドレス形式で入力してください")
+                else:
+                    ok = send_password_reset_email(reset_email)
+                    if ok:
+                        st.success("パスワード再設定メールを送信しました。メールをご確認ください。")
+                    else:
+                        st.error("送信に失敗しました。メールアドレスをご確認ください。")
 
     # ---------------------------
     # 新規登録

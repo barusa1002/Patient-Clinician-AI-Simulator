@@ -30,10 +30,10 @@ import streamlit.components.v1 as components
 components.html("""
 <script>
 (function() {
-    var hash = window.location.hash;
+    var hash = window.parent.location.hash;
     if (hash && hash.includes('type=recovery')) {
         var params = hash.substring(1);
-        window.location.replace('/?' + params);
+        window.parent.location.replace('/?' + params);
     }
 })();
 </script>

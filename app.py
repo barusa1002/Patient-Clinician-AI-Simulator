@@ -24,16 +24,43 @@ def load_css():
 load_css()
 
 # ==========================================================
+# URLフラグメント → クエリパラメータ変換（パスワードリセット用）
+# ==========================================================
+import streamlit.components.v1 as components
+components.html("""
+<script>
+(function() {
+    var hash = window.location.hash;
+    if (hash && hash.includes('type=recovery')) {
+        var params = hash.substring(1);
+        window.location.replace(window.location.pathname + '?' + params);
+    }
+})();
+</script>
+""", height=0)
+
+# ==========================================================
 # セッション初期化
 # ==========================================================
 from session import init_session_state
 init_session_state()
 
 # ==========================================================
+# パスワードリセットリンク経由の検出
+# ==========================================================
+from auth import login_screen, show_reset_password_form
+
+query = st.query_params
+if query.get("type") == "recovery":
+    access_token = query.get("access_token", "")
+    refresh_token = query.get("refresh_token", "")
+    show_reset_password_form(access_token, refresh_token)
+    st.stop()
+
+# ==========================================================
 # Supabase Auth
 # ==========================================================
 from db import get_current_user, logout, supabase
-from auth import login_screen
 
 user = get_current_user()
 

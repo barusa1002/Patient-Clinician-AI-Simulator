@@ -67,11 +67,55 @@ def create_staff_user(email, password):
 # =========================
 def send_password_reset_email(email):
     try:
-        supabase.auth.reset_password_for_email(email)
+        app_url = st.secrets.get("APP_URL", "")
+        options = {"redirect_to": app_url} if app_url else {}
+        supabase.auth.reset_password_for_email(email, options=options)
         return True
     except Exception as e:
         logger.error(f"send_password_reset_email error: {e}")
         return False
+
+
+# =========================
+# パスワード更新
+# =========================
+def update_user_password(access_token, refresh_token, new_password):
+    try:
+        supabase.auth.set_session(access_token, refresh_token)
+        supabase.auth.update_user({"password": new_password})
+        return True
+    except Exception as e:
+        logger.error(f"update_user_password error: {e}")
+        return False
+
+
+# =========================
+# パスワード再設定フォーム（リンク経由）
+# =========================
+def show_reset_password_form(access_token, refresh_token):
+    col1, col2, col3 = st.columns([1, 8, 1])
+    with col2:
+        st.image("images/logo.png", width=800)
+        st.subheader("🔑 新しいパスワードを設定")
+
+        new_pass1 = st.text_input("新しいパスワード", type="password", key="new_pass1")
+        new_pass2 = st.text_input("新しいパスワード（確認）", type="password", key="new_pass2")
+
+        if st.button("パスワードを更新", key="update_pass_btn"):
+            if not new_pass1:
+                st.error("パスワードを入力してください")
+            elif not is_valid_password(new_pass1):
+                st.error("パスワードは6文字以上で入力してください")
+            elif new_pass1 != new_pass2:
+                st.error("パスワードが一致しません")
+            else:
+                ok = update_user_password(access_token, refresh_token, new_pass1)
+                if ok:
+                    st.success("パスワードを更新しました。ログインしてください。")
+                    st.query_params.clear()
+                    st.rerun()
+                else:
+                    st.error("更新に失敗しました。リンクの有効期限が切れている可能性があります。")
 
 
 # =========================

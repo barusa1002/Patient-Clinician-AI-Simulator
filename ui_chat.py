@@ -26,9 +26,40 @@ def render_chat_page(
     IS_MOBILE = st.session_state.get("is_mobile", False)
 
     # ==================================================
-    # タイトル
+    # タイトル（モバイル対応：コンパクトバッジ形式）
     # ==================================================
-    st.header(f"{scenario}｜{subscenario}")
+    if IS_MOBILE:
+        st.markdown(
+            f"""
+            <div style="
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                background: rgba(124,58,237,0.15);
+                border: 1px solid rgba(124,58,237,0.3);
+                border-radius: 20px;
+                padding: 4px 14px;
+                margin-bottom: 8px;
+                max-width: 100%;
+                overflow: hidden;
+            ">
+                <span style="font-size:0.75rem; color:#a78bfa; font-weight:600;
+                             white-space:nowrap; overflow:hidden;
+                             text-overflow:ellipsis;">
+                    📋 {scenario}
+                </span>
+                <span style="color:rgba(255,255,255,0.3); font-size:0.7rem;">｜</span>
+                <span style="font-size:0.75rem; color:#93c5fd; font-weight:600;
+                             white-space:nowrap; overflow:hidden;
+                             text-overflow:ellipsis;">
+                    {subscenario}
+                </span>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    else:
+        st.header(f"{scenario}｜{subscenario}")
 
     # ==================================================
     # チャット履歴表示
@@ -118,7 +149,8 @@ def render_chat_page(
     # ==================================================
     has_history = len(st.session_state.chat_history) > 0
 
-    if st.button("💡 ヒントを見る", disabled=not has_history):
+    hint_label = "💡 ヒント" if IS_MOBILE else "💡 ヒントを見る"
+    if st.button(hint_label, disabled=not has_history):
         checklist = EVALUATION_CHECKLISTS.get(scenario, {})
         checklist_text = "\n".join(f"- {item}" for item in checklist)
 

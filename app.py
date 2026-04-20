@@ -23,6 +23,28 @@ def load_css():
 
 load_css()
 
+# モバイル向け追加スタイル（フォールバック用インライン）
+st.markdown("""
+<style>
+/* モバイル：タイトル圧縮 */
+@media screen and (max-width: 768px) {
+    h1 { font-size: 1.1rem !important; padding-top: 0 !important; margin-top: 0 !important; }
+    h2 { font-size: 0.95rem !important; }
+    .main .block-container { padding-top: 0.4rem !important; }
+    /* Streamlit デフォルトの上部余白を削減 */
+    .stAppViewBlockContainer { padding-top: 0.5rem !important; }
+}
+/* チャット入力を常に下部に固定 */
+[data-testid="stBottom"] {
+    background: rgba(14, 17, 23, 0.92) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-top: 1px solid rgba(255,255,255,0.08) !important;
+    padding: 0.5rem 0.75rem !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # ==========================================================
 # URLフラグメント → クエリパラメータ変換（パスワードリセット用）
 # ==========================================================
@@ -114,9 +136,20 @@ else:
     st.session_state.tutorial_done = False
 
 # ==========================================================
-# タイトル
+# スマホ判定（タイトル表示前に実施）
 # ==========================================================
-st.title("患者・医療従事者役 AI シミュレーター")
+from utils import strip_thought, reset_session, detect_mobile
+
+if "is_mobile" not in st.session_state:
+    st.session_state.is_mobile = detect_mobile()
+
+# ==========================================================
+# タイトル（モバイルは短縮）
+# ==========================================================
+if st.session_state.is_mobile:
+    st.title("AI シミュレーター")
+else:
+    st.title("患者・医療従事者役 AI シミュレーター")
 
 # ==========================================================
 # チュートリアル（🔥最優先）
@@ -163,13 +196,6 @@ st.session_state.gemini_client = CLIENT
 # その他import
 # ==========================================================
 from audio import speak_text, play_audio
-from utils import strip_thought, reset_session, detect_mobile
-
-# ==========================================================
-# スマホ判定
-# ==========================================================
-if "is_mobile" not in st.session_state:
-    st.session_state.is_mobile = detect_mobile()
 
 from evaluation import (
     build_evaluation_prompt,

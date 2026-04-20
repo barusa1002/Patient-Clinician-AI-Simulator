@@ -167,11 +167,28 @@ def get_user_profile(user_id):
 # =========================
 def login_screen():
 
-    col1, col2, col3 = st.columns([1, 8, 1])
-
+    # ロゴ・キャッチコピー
+    col1, col2, col3 = st.columns([1, 6, 1])
     with col2:
-        st.image("images/logo.png", width=800)
-        st.caption("💊 患者・医療従事者役 AI シミュレーター")
+        st.image("images/logo.png", use_container_width=True)
+
+    st.markdown(
+        """
+        <div style="text-align:center; margin:-0.5rem 0 1rem;">
+            <span style="
+                display:inline-block;
+                background: linear-gradient(135deg,#7c3aed,#2563eb);
+                color:white;
+                font-size:0.78rem;
+                font-weight:700;
+                letter-spacing:0.08em;
+                padding:4px 16px;
+                border-radius:20px;
+            ">💊 OSCE練習 AI シミュレーター</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     tab_login, tab_register = st.tabs(["ログイン", "新規登録"])
 

@@ -70,3 +70,254 @@
     50% {transform: translateY(6px);}
     100% {transform: translateY(0);}
 }
+
+
+/* =================================
+   モバイル最適化 & モダンUIスタイル
+================================= */
+
+/* ----------------------------------
+   フォント・ベース
+---------------------------------- */
+[data-testid="stAppViewContainer"],
+[data-testid="stApp"] {
+    font-family: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic UI',
+                 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+/* ----------------------------------
+   全体パディング最適化
+---------------------------------- */
+.main .block-container {
+    padding-top: 1.25rem !important;
+    padding-bottom: 6rem !important;
+}
+
+/* ----------------------------------
+   タイトル（h1）デスクトップ
+---------------------------------- */
+h1 {
+    font-weight: 800 !important;
+    letter-spacing: -0.01em !important;
+    background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 100%);
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+}
+
+/* ----------------------------------
+   モバイル専用（～768px）
+---------------------------------- */
+@media screen and (max-width: 768px) {
+
+    /* タイトルを大幅に縮小 */
+    h1 {
+        font-size: 1.15rem !important;
+        line-height: 1.35 !important;
+        margin-bottom: 0.1rem !important;
+    }
+
+    /* サブヘッダー縮小 */
+    h2 {
+        font-size: 0.95rem !important;
+        line-height: 1.35 !important;
+        margin-bottom: 0.4rem !important;
+    }
+
+    h3 {
+        font-size: 0.9rem !important;
+    }
+
+    /* コンテンツのパディングを詰める */
+    .main .block-container {
+        padding: 0.5rem 0.6rem 6rem !important;
+        max-width: 100% !important;
+    }
+
+    /* ボタンを指で押しやすいサイズに */
+    .stButton > button {
+        min-height: 44px !important;
+        font-size: 0.9rem !important;
+        width: 100% !important;
+    }
+
+    /* 水平線のマージン削減 */
+    hr {
+        margin: 0.4rem 0 !important;
+    }
+
+    /* テキスト全体を少し小さく */
+    p, li, span, label {
+        font-size: 0.88rem !important;
+    }
+}
+
+/* ----------------------------------
+   モダンボタンスタイル
+---------------------------------- */
+.stButton > button {
+    border-radius: 22px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.03em !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+    border: none !important;
+    padding: 0.45rem 1.2rem !important;
+}
+
+.stButton > button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.35) !important;
+}
+
+.stButton > button:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* プライマリボタン */
+.stButton > button[kind="primary"] {
+    background: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%) !important;
+    color: white !important;
+}
+
+/* セカンダリ（ヒントボタンなど） */
+.stButton > button[kind="secondary"] {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: inherit !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.stButton > button[kind="secondary"]:hover {
+    background: rgba(255, 255, 255, 0.14) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* ----------------------------------
+   チャットメッセージ
+---------------------------------- */
+
+/* ユーザー発言 */
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) {
+    background: rgba(124, 58, 237, 0.1) !important;
+    border-radius: 16px !important;
+    border: 1px solid rgba(124, 58, 237, 0.2) !important;
+    margin-bottom: 0.6rem !important;
+    padding: 0.6rem 0.75rem !important;
+}
+
+/* AI（アシスタント）発言 */
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-radius: 16px !important;
+    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    margin-bottom: 0.6rem !important;
+    padding: 0.6rem 0.75rem !important;
+}
+
+/* ----------------------------------
+   チャット入力フィールド
+---------------------------------- */
+[data-testid="stChatInput"] {
+    border-radius: 28px !important;
+}
+
+[data-testid="stChatInput"] > div {
+    border-radius: 28px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* ----------------------------------
+   情報ボックス（ヒント表示）
+---------------------------------- */
+[data-testid="stAlert"][data-baseweb="notification"] {
+    border-radius: 14px !important;
+    border-left: 4px solid #60a5fa !important;
+    padding: 0.75rem 1rem !important;
+}
+
+/* ----------------------------------
+   Expander（折りたたみ）
+---------------------------------- */
+[data-testid="stExpander"] {
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ----------------------------------
+   サイドバー
+---------------------------------- */
+[data-testid="stSidebar"] {
+    background: rgba(15, 15, 25, 0.95) !important;
+}
+
+[data-testid="stSidebarContent"] .stButton > button {
+    border-radius: 10px !important;
+    width: 100% !important;
+    text-align: left !important;
+    justify-content: flex-start !important;
+}
+
+/* ----------------------------------
+   テキスト入力フィールド
+---------------------------------- */
+[data-testid="textInput"] input,
+.stTextInput input {
+    border-radius: 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    transition: border-color 0.2s ease !important;
+    padding: 0.6rem 0.9rem !important;
+}
+
+[data-testid="textInput"] input:focus,
+.stTextInput input:focus {
+    border-color: #7c3aed !important;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2) !important;
+}
+
+/* ----------------------------------
+   タブ
+---------------------------------- */
+[data-testid="stTabs"] [role="tab"] {
+    border-radius: 10px 10px 0 0 !important;
+    font-weight: 600 !important;
+    padding: 0.5rem 1.5rem !important;
+}
+
+/* ----------------------------------
+   水平ライン
+---------------------------------- */
+hr {
+    margin: 0.75rem 0 !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    opacity: 1 !important;
+}
+
+/* ----------------------------------
+   モバイル：Streamlit デフォルト
+   ヘッダーバーを透過
+---------------------------------- */
+[data-testid="stHeader"] {
+    background: rgba(0, 0, 0, 0) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+}
+
+/* ----------------------------------
+   スクロールバーを細く
+---------------------------------- */
+::-webkit-scrollbar {
+    width: 4px !important;
+    height: 4px !important;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-radius: 2px !important;
+}

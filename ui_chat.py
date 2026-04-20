@@ -228,6 +228,9 @@ def render_chat_page(
             json_text = raw_eval[start:end]
             evaluation_json = json.loads(json_text)
 
+            # 模範解答生成時に不足項目を参照できるよう保存
+            st.session_state["last_evaluation_json"] = evaluation_json
+
         except Exception as e:
             st.error("評価の解析に失敗しました")
 
@@ -354,21 +357,32 @@ def render_chat_page(
 
 
     # ==================================================
-    # 模範解答
+    # 模範解答（評価結果を踏まえた補完版）
     # ==================================================
     if st.session_state.get("evaluation_done"):
 
         st.markdown("---")
 
         if st.button("📖 模範解答を見る"):
-            checklist = EVALUATION_CHECKLISTS.get(scenario, {})
-            checklist_text = "\n".join(f"- {item}" for item in checklist)
+            import re as _re
 
-            phrases_text = "\n".join(
-                f"- {item}：「{phrase}」"
-                for item, phrase in checklist.items()
-                if phrase
-            )
+            last_eval = st.session_state.get("last_evaluation_json", {})
+            missing_items = last_eval.get("missing", [])
+
+            # 既存会話を文字列化
+            conv_lines = []
+            for role, msg in st.session_state.chat_history:
+                speaker = "薬剤師" if role == "user" else "患者"
+                conv_lines.append(f"{speaker}：「{msg}」")
+            existing_conv = "\n".join(conv_lines)
+
+            # 不足項目テキスト
+            if missing_items:
+                missing_text = "\n".join(
+                    f"- {m['item']}：{m['reason']}" for m in missing_items
+                )
+            else:
+                missing_text = "（不足項目なし）"
 
             task_info_text = "\n".join(
                 f"【{k}】\n{v}" for k, v in selected.get("task_info", {}).items()
@@ -376,7 +390,7 @@ def render_chat_page(
 
             model_answer_prompt = f"""
 あなたは薬学実習の指導教員です。
-以下のシナリオ情報に忠実に従い、模範的な薬剤師と患者の会話例を生成してください。
+以下の「既存の会話」をベースに、不足していた評価項目を自然に補完して完成した模範会話を作成してください。
 
 【課題名】
 {scenario} / {subscenario}
@@ -384,26 +398,20 @@ def render_chat_page(
 【シナリオ詳細情報】
 {task_info_text}
 
-【評価チェックリスト（全項目を満たすこと）】
-{checklist_text}
+【既存の会話（そのまま使うこと・変更・削除禁止）】
+{existing_conv}
 
-【各評価項目の模範セリフ（記載がある項目は必ずそのまま使うこと）】
-{phrases_text if phrases_text else "（なし）"}
+【不足していた評価項目（これらを補完すること）】
+{missing_text}
 
-【表示形式】
-必ず以下の形式で、1行1発言として出力してください。
-薬剤師：「〇〇」
-患者：「〇〇」
-薬剤師：「〇〇」
-...
-
-【ルール】
-- シナリオ詳細情報に記載された患者情報・処方内容・症状をそのまま使うこと
-- 独自に患者情報や処方内容を作らないこと
-- 評価チェックリストの全項目を自然な流れでカバーすること
-- 模範セリフが指定されている項目は、その言葉をそのまま使うこと
-- 丁寧で実践的な言葉遣いを使うこと
-- 会話形式のみ出力すること（説明文・前置きは不要）
+【出力ルール】
+- 既存の会話の各行はそのまま出力すること（一字一句変更・削除禁止）
+- 不足項目を補うための発言を、会話の流れが最も自然な位置に挿入すること
+- 補完した発言（新たに追加した行のみ）は必ず [補完] タグで囲むこと
+  例：[補完]薬剤師：「副作用についてご説明します」[/補完]
+- 既存の発言には [補完] タグを絶対に付けないこと
+- 1行1発言の形式を厳守すること
+- 会話形式のみ出力すること（説明文・前置き・見出し不要）
 - 日本語で出力すること
 """
 
@@ -412,7 +420,7 @@ def render_chat_page(
                     model_answer_session = start_chat(
                         client=st.session_state.gemini_client,
                         model_name=MODEL_NAME,
-                        system_prompt="あなたは薬学実習の指導教員です。模範的な薬剤師の会話例を生成します。"
+                        system_prompt="あなたは薬学実習の指導教員です。既存の会話を活かしながら不足部分を自然に補完します。"
                     )
                     st.session_state["model_answer_text"] = model_answer_session.send_message(
                         model_answer_prompt
@@ -421,12 +429,61 @@ def render_chat_page(
                     st.session_state["model_answer_text"] = "模範解答の生成に失敗しました。"
 
         if st.session_state.get("model_answer_text"):
-            with st.expander("📖 模範的な会話例を見る", expanded=True):
-                lines = [
-                    line.strip()
-                    for line in st.session_state["model_answer_text"].splitlines()
-                    if line.strip()
-                ]
-                st.markdown("\n\n".join(lines))
+            import re as _re
+
+            with st.expander("📖 模範的な会話例（補完版）を見る", expanded=True):
+                raw_text = st.session_state["model_answer_text"]
+
+                # [補完]...[/補完] ブロックで分割
+                segments = _re.split(r'(\[補完\].*?\[/補完\])', raw_text, flags=_re.DOTALL)
+
+                html_parts = []
+                for seg in segments:
+                    m = _re.match(r'^\[補完\](.*?)\[/補完\]$', seg.strip(), _re.DOTALL)
+                    if m:
+                        # 補完部分：青色ハイライト
+                        inner_lines = [
+                            l.strip() for l in m.group(1).splitlines() if l.strip()
+                        ]
+                        for line in inner_lines:
+                            safe = line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                            html_parts.append(
+                                f'<div style="'
+                                f'color: #60a5fa; '
+                                f'background: rgba(96,165,250,0.13); '
+                                f'border-left: 3px solid #60a5fa; '
+                                f'padding: 6px 10px; '
+                                f'border-radius: 0 8px 8px 0; '
+                                f'margin: 4px 0; '
+                                f'font-weight: 500;'
+                                f'">✦ {safe}</div>'
+                            )
+                    else:
+                        # 既存発言：通常表示
+                        for line in seg.splitlines():
+                            line = line.strip()
+                            if not line:
+                                continue
+                            # 念のため残留タグを除去
+                            clean = _re.sub(r'\[/?補完\]', '', line)
+                            safe = clean.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                            html_parts.append(
+                                f'<div style="padding: 4px 0; margin: 2px 0;">{safe}</div>'
+                            )
+
+                st.markdown(
+                    '<div style="line-height: 1.9; font-size: 0.93rem;">'
+                    + "".join(html_parts)
+                    + "</div>",
+                    unsafe_allow_html=True,
+                )
+
+                # 凡例
+                st.markdown(
+                    '<div style="margin-top: 10px; font-size: 0.78rem; '
+                    'color: rgba(255,255,255,0.45);">'
+                    "✦ 青色ハイライト：AIによって補完された発言</div>",
+                    unsafe_allow_html=True,
+                )
 
 

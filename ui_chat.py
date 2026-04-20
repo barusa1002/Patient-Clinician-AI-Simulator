@@ -149,8 +149,14 @@ def render_chat_page(
     # ==================================================
     has_history = len(st.session_state.chat_history) > 0
 
-    hint_label = "💡 ヒント" if IS_MOBILE else "💡 ヒントを見る"
-    if st.button(hint_label, disabled=not has_history):
+    if IS_MOBILE:
+        # モバイル：小さいボタンを左端に配置
+        hint_col, _ = st.columns([2, 5])
+        with hint_col:
+            hint_clicked = st.button("💡 ヒント", disabled=not has_history, key="hint_btn")
+    else:
+        hint_clicked = st.button("💡 ヒントを見る", disabled=not has_history, key="hint_btn")
+    if hint_clicked:
         checklist = EVALUATION_CHECKLISTS.get(scenario, {})
         checklist_text = "\n".join(f"- {item}" for item in checklist)
 

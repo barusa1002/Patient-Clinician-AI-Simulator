@@ -160,6 +160,15 @@ if (
     run_tutorial()
 
 # ==========================================================
+# 学習モード選択
+# ==========================================================
+from ui_mode_select import render_mode_select_page
+
+if "learning_mode" not in st.session_state:
+    render_mode_select_page()
+    st.stop()
+
+# ==========================================================
 # ページ管理
 # ==========================================================
 if "page" not in st.session_state:
@@ -200,11 +209,27 @@ from evaluation import (
     load_user_evaluations
 )
 
-from prompts import (
-    MODE_PROMPTS,
-    SCENARIOS,
-    SCENARIO_PROMPTS
-)
+# 学習モードに応じてプロンプトセットを切り替え
+_learning_mode = st.session_state.get("learning_mode", "OSCE対策")
+
+if _learning_mode == "実習前練習":
+    from prompts_jisshu import (
+        JISSHU_MODE_PROMPTS as MODE_PROMPTS,
+        JISSHU_SCENARIOS as SCENARIOS,
+        JISSHU_SCENARIO_PROMPTS as SCENARIO_PROMPTS,
+    )
+elif _learning_mode == "初期研修":
+    from prompts_kenshu import (
+        KENSHU_MODE_PROMPTS as MODE_PROMPTS,
+        KENSHU_SCENARIOS as SCENARIOS,
+        KENSHU_SCENARIO_PROMPTS as SCENARIO_PROMPTS,
+    )
+else:  # OSCE対策（デフォルト）
+    from prompts import (
+        MODE_PROMPTS,
+        SCENARIOS,
+        SCENARIO_PROMPTS,
+    )
 
 # ==========================================================
 # 🔥 サイドバー（チュートリアル後に実行）

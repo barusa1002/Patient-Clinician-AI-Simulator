@@ -167,6 +167,10 @@ def get_user_profile(user_id):
 # =========================
 def login_screen():
 
+    # セッションタイムアウトメッセージ
+    if st.query_params.get("expired") == "1":
+        st.warning("一定時間操作がなかったためログアウトしました。再度ログインしてください。")
+
     # ロゴ・キャッチコピー
     col1, col2, col3 = st.columns([1, 6, 1])
     with col2:
@@ -227,6 +231,7 @@ def login_screen():
                         st.session_state.tutorial_done = False
 
                     st.success("ログイン成功")
+                    st.query_params.clear()
                     st.rerun()
 
                 else:

@@ -15,6 +15,74 @@ from llm import start_chat
 from config import MODEL_NAME
 
 
+# ==================================================
+# 疑義照会：会話終了検知
+# ==================================================
+_FAREWELL_KEYWORDS = [
+    "失礼いたします", "失礼します",
+    "ありがとうございました",
+    "お電話ありがとうございました",
+    "では失礼", "電話を切",
+]
+
+def _detect_gigi_end(chat_history):
+    """AIの最後のメッセージに終了挨拶が含まれるか判定する"""
+    for role, msg in reversed(chat_history):
+        if role == "assistant":
+            return any(kw in msg for kw in _FAREWELL_KEYWORDS)
+    return False
+
+
+# ==================================================
+# 疑義照会：処方箋備考欄フォーム
+# ==================================================
+def _render_prescription_form():
+    """疑義照会完了後の処方箋備考欄記入フォームを描画する"""
+    from datetime import datetime as _dt
+    st.markdown("---")
+    st.markdown("### 📋 処方箋 備考欄記載")
+    st.caption("疑義照会が完了しました。処方箋の備考欄に記載する内容を入力してください。")
+
+    if st.session_state.get("prescription_submitted"):
+        notes = st.session_state.get("prescription_notes", {})
+        st.success("✅ 備考欄を記録しました")
+        st.markdown(
+            f"- **日時**：{notes.get('date_time', '（未記載）')}\n"
+            f"- **照会方法**：{notes.get('method', '（未記載）')}\n"
+            f"- **照会者（自分）**：{notes.get('pharmacist_name', '（未記載）')}\n"
+            f"- **照会先（医師名）**：{notes.get('doctor_name', '（未記載）')}\n"
+            f"- **変更内容**：{notes.get('change_content', '（未記載）')}"
+        )
+        if st.button("📝 再記入する", key="prescription_redo"):
+            st.session_state["prescription_submitted"] = False
+            st.rerun()
+        return
+
+    with st.form("prescription_notes_form"):
+        default_date = _dt.now().strftime("%Y年%m月%d日")
+        date_time = st.text_input("日時", value=default_date,
+                                  placeholder="例：2024年1月15日 14:30")
+        method = st.selectbox("照会方法", ["電話", "FAX", "直接"])
+        pharmacist_name = st.text_input("照会者（自分の名前）",
+                                        placeholder="例：高嶋 貫多")
+        doctor_name = st.text_input("照会先（医師名・医療機関）",
+                                    placeholder="例：山田太郎医師（スイカ総合病院内科）")
+        change_content = st.text_area("変更内容",
+                                      placeholder="例：アムロジピン錠5mg　1日2回→1日1回朝食後に変更")
+        submitted = st.form_submit_button("📝 記録する")
+
+        if submitted:
+            st.session_state["prescription_notes"] = {
+                "date_time": date_time,
+                "method": method,
+                "pharmacist_name": pharmacist_name,
+                "doctor_name": doctor_name,
+                "change_content": change_content,
+            }
+            st.session_state["prescription_submitted"] = True
+            st.rerun()
+
+
 
 def render_chat_page(
     scenario,
@@ -199,14 +267,27 @@ def render_chat_page(
         st.info(st.session_state["hint_text"])
 
     # ==================================================
+    # 疑義照会：処方箋備考欄フォーム
+    # ==================================================
+    if scenario == "疑義照会" and _detect_gigi_end(st.session_state.get("chat_history", [])):
+        _render_prescription_form()
+
+    # ==================================================
     # 評価実行
     # ==================================================
     if st.session_state.get("run_evaluation"):
 
+        prescription_notes = (
+            st.session_state.get("prescription_notes")
+            if scenario == "疑義照会"
+            else None
+        )
+
         eval_prompt = build_evaluation_prompt(
             scenario,
             subscenario,
-            st.session_state.chat_history
+            st.session_state.chat_history,
+            prescription_notes=prescription_notes,
         )
 
         raw_eval = None
@@ -278,7 +359,8 @@ def render_chat_page(
             scenario=scenario,
             subscenario=subscenario,
             chat_history=st.session_state.chat_history,
-            evaluation_text=evaluation_json
+            evaluation_text=evaluation_json,
+            prescription_notes=prescription_notes,
         )
 
         # =============================

@@ -535,7 +535,7 @@ EVALUATION_CHECKLISTS = {
 # AI評価プロンプト作成
 # ==========================================================
 
-def build_evaluation_prompt(scenario, subscenario, chat_history):
+def build_evaluation_prompt(scenario, subscenario, chat_history, prescription_notes=None):
 
     conversation = ""
     for role, msg in chat_history:
@@ -549,6 +549,21 @@ def build_evaluation_prompt(scenario, subscenario, chat_history):
         f"- {item}" for item in checklist
     )
 
+    # 疑義照会：処方箋備考欄セクション
+    prescription_section = ""
+    if scenario == "疑義照会":
+        if prescription_notes:
+            prescription_section = f"""
+【処方箋備考欄（学生が記載した内容）】
+- 日時：{prescription_notes.get('date_time', '（未記載）')}
+- 照会方法：{prescription_notes.get('method', '（未記載）')}
+- 照会者：{prescription_notes.get('pharmacist_name', '（未記載）')}
+- 照会先：{prescription_notes.get('doctor_name', '（未記載）')}
+- 変更内容：{prescription_notes.get('change_content', '（未記載）')}
+"""
+        else:
+            prescription_section = "\n【処方箋備考欄】未記入\n"
+
     prompt = f"""
 あなたは薬学実習の評価者です。
 以下の会話を客観的に評価してください。
@@ -557,8 +572,7 @@ def build_evaluation_prompt(scenario, subscenario, chat_history):
 {scenario} / {subscenario}
 
 【会話ログ】
-{conversation}
-
+{conversation}{prescription_section}
 【評価項目】
 {checklist_text}
 
@@ -606,17 +620,22 @@ JSON以外の文章は絶対に出力しない。
 # ==========================================================
 # 評価保存（Supabase版）
 # ==========================================================
-def save_evaluation(user_id, scenario, subscenario, chat_history, evaluation_text):
+def save_evaluation(user_id, scenario, subscenario, chat_history, evaluation_text,
+                    prescription_notes=None):
 
     try:
+        eval_data = {
+            "chat_history": chat_history,
+            "result": evaluation_text,
+        }
+        if prescription_notes:
+            eval_data["prescription_notes"] = prescription_notes
+
         supabase.table("evaluations").insert({
             "user_id": user_id,
             "scenario": scenario,
             "subscenario": subscenario,
-            "evaluation": {
-                "chat_history": chat_history,
-                "result": evaluation_text
-            }
+            "evaluation": eval_data,
         }).execute()
 
     except Exception as e:

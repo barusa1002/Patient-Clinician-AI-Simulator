@@ -345,6 +345,8 @@ if st.session_state.current_scenario != scenario_key:
     st.session_state.chat_history = []
     st.session_state.chat_session = init_chat_session(mode, selected)
     st.session_state.current_scenario = scenario_key
+    st.session_state.pop("prescription_notes", None)
+    st.session_state.pop("prescription_submitted", None)
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []

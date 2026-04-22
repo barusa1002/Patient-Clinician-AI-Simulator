@@ -64,9 +64,9 @@ def _render_prescription_form():
                                   placeholder="例：2024年1月15日 14:30")
         method = st.selectbox("照会方法", ["電話", "FAX", "直接"])
         pharmacist_name = st.text_input("照会者（自分の名前）",
-                                        placeholder="例：高嶋 貫多")
+                                        placeholder="例：昭薬 花子")
         doctor_name = st.text_input("照会先（医師名・医療機関）",
-                                    placeholder="例：山田太郎医師（スイカ総合病院内科）")
+                                    placeholder="例：昭薬太郎医師（昭和薬科大学付属病院内科）")
         change_content = st.text_area("変更内容",
                                       placeholder="例：アムロジピン錠5mg　1日2回→1日1回朝食後に変更")
         submitted = st.form_submit_button("📝 記録する")

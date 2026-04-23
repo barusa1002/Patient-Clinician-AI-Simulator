@@ -216,12 +216,14 @@ def login_screen():
                 ok, user = authenticate(email, password)
 
                 if ok:
+                    from datetime import datetime as _dt
                     user_id = user.id
                     profile = get_user_profile(user_id)
 
                     st.session_state.logged_in = True
                     st.session_state.user_id = user_id
                     st.session_state.email = user.email
+                    st.session_state.last_activity = _dt.now()
 
                     if profile:
                         st.session_state.role = profile.get("role", "student")

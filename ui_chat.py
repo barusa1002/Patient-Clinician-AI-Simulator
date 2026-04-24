@@ -371,9 +371,9 @@ def render_chat_page(
         st.write(f"達成率：{achieved}/{total}（{rate*100:.1f}%）")
 
         if passed:
-            st.success("🎉 OSCE合格")
+            st.success("🎉 評価基準達成")
         else:
-            st.error("❌ OSCE不合格")
+            st.error("❌ 評価基準未達")
 
         st.markdown("---")
 

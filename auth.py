@@ -188,7 +188,7 @@ def login_screen():
                 letter-spacing:0.08em;
                 padding:4px 16px;
                 border-radius:20px;
-            ">💊 OSCE練習 AI シミュレーター</span>
+            ">💊 患者・医療従事者 AI シミュレーター</span>
         </div>
         """,
         unsafe_allow_html=True
@@ -307,7 +307,7 @@ def login_screen():
 
     st.info(
         """
-・このアプリは **OSCE練習用AIシミュレーター**です  
+・このアプリは **患者・医療従事者役AIとの実践シミュレーター**です
 ・評価履歴はクラウドに保存されます  
 ・不具合があればお問い合わせください
 """

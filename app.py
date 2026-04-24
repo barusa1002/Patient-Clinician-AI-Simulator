@@ -246,9 +246,9 @@ from evaluation import (
 )
 
 # 学習モードに応じてプロンプトセットを切り替え
-_learning_mode = st.session_state.get("learning_mode", "OSCE対策")
+_learning_mode = st.session_state.get("learning_mode", "スタンダードモード")
 
-if _learning_mode == "実習前練習":
+if _learning_mode == "スキルアップモード":
     from prompts_jisshu import (
         JISSHU_MODE_PROMPTS as MODE_PROMPTS,
         JISSHU_SCENARIOS as SCENARIOS,
@@ -260,7 +260,7 @@ elif _learning_mode == "初期研修":
         KENSHU_SCENARIOS as SCENARIOS,
         KENSHU_SCENARIO_PROMPTS as SCENARIO_PROMPTS,
     )
-else:  # OSCE対策（デフォルト）
+else:  # スタンダードモード（デフォルト）
     from prompts import (
         MODE_PROMPTS,
         SCENARIOS,

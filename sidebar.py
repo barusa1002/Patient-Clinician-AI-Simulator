@@ -12,7 +12,7 @@ def render_sidebar(
     # ============================
     # 学習モード表示・切替
     # ============================
-    learning_mode = st.session_state.get("learning_mode", "OSCE対策")
+    learning_mode = st.session_state.get("learning_mode", "スタンダードモード")
     st.sidebar.markdown(f"**🎓 学習モード：{learning_mode}**")
     if st.sidebar.button("🔀 学習モードを変更する"):
         keys_to_clear = ["learning_mode", "chat_history", "chat_session", "current_scenario"]

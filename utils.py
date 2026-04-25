@@ -15,16 +15,23 @@ def strip_thought(text: str) -> str:
     if not text:
         return text
 
-    # THOUGHT削除
+    # THOUGHT削除（明示ラベルあり）
     text = re.sub(r"THOUGHT.*?回答[:：]", "", text, flags=re.DOTALL)
     text = re.sub(r"THOUGHT.*", "", text)
 
     # 回答ラベル削除
     text = re.sub(r"回答[:：]", "", text)
 
-    # 🔥 発話がある場合はそこだけ残す
+    # 発話ラベルがある場合はそこだけ残す
     if "発話：" in text:
         text = text.split("発話：")[-1]
+
+    # Gemini 2.5の暗黙的思考対応：
+    # 複数段落（空行区切り）がある場合は最後の段落だけを返す
+    # （思考プロセスが先行し、実際の応答が最後に出るパターン）
+    paragraphs = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
+    if len(paragraphs) > 1:
+        text = paragraphs[-1]
 
     return text.strip()
 

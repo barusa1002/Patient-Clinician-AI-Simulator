@@ -1,8 +1,27 @@
 # utils.py
 # 共通ユーティリティ関数群
 
+
 import re
 import streamlit as st
+
+# Gemini 2.5が思考プロセスを出力するときに現れるキーワード一覧
+# （患者の実際のセリフには絶対に現れない語句のみ登録する）
+_THINKING_INDICATORS = [
+    "ユーザーは",
+    "私は患者役",
+    "患者役として",
+    "前の回答で",
+    "と答えるのが適切",
+    "と返答するのが適切",
+    "と答えるのが自然",
+    "と答えるべき",
+    "質問されたことに答える",
+    "のみを返す",
+    "のみ答える",
+    "のみ出力する",
+    "患者情報に",
+]
 
 # ==========================================================
 # フィルタ関数
@@ -33,16 +52,16 @@ def strip_thought(text: str) -> str:
         text = paragraphs[-1]
 
     # Gemini 2.5の暗黙的思考対応（2）：
-    # 「〜のみを返す。」など、モデルが出力を自己記述する思考文の直後の実応答を取得
-    # （空行なしで思考と応答が同一段落にあるパターン）
-    match = re.search(
-        r'(?:のみを返す|のみ返す|のみ答える|のみ出力する|を出力する)。\s+(.+)$',
-        text, re.DOTALL
-    )
-    if match:
-        candidate = match.group(1).strip()
-        if candidate:
-            text = candidate
+    # 思考キーワードが含まれる場合、「。」で分割して最後の文だけを返す
+    # （最後の文がメタ言語でない場合のみ採用）
+    if any(kw in text for kw in _THINKING_INDICATORS):
+        sentences = [s.strip() for s in text.split("。") if s.strip()]
+        if sentences:
+            last = sentences[-1]
+            if not any(kw in last for kw in _THINKING_INDICATORS):
+                if not last.endswith(("。", "？", "！")):
+                    last += "。"
+                text = last
 
     return text.strip()
 

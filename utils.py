@@ -26,12 +26,23 @@ def strip_thought(text: str) -> str:
     if "発話：" in text:
         text = text.split("発話：")[-1]
 
-    # Gemini 2.5の暗黙的思考対応：
-    # 複数段落（空行区切り）がある場合は最後の段落だけを返す
-    # （思考プロセスが先行し、実際の応答が最後に出るパターン）
+    # Gemini 2.5の暗黙的思考対応（1）：
+    # 空行区切りで複数段落がある場合は最後の段落のみ残す
     paragraphs = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
     if len(paragraphs) > 1:
         text = paragraphs[-1]
+
+    # Gemini 2.5の暗黙的思考対応（2）：
+    # 「〜のみを返す。」など、モデルが出力を自己記述する思考文の直後の実応答を取得
+    # （空行なしで思考と応答が同一段落にあるパターン）
+    match = re.search(
+        r'(?:のみを返す|のみ返す|のみ答える|のみ出力する|を出力する)。\s+(.+)$',
+        text, re.DOTALL
+    )
+    if match:
+        candidate = match.group(1).strip()
+        if candidate:
+            text = candidate
 
     return text.strip()
 

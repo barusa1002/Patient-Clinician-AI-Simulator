@@ -67,7 +67,11 @@ def detect_mobile() -> bool:
 # セッションリセット関数
 # ==========================================================
 def reset_session():
-    for key in ["chat_history", "chat_session", "current_scenario",
-                "prescription_notes", "prescription_submitted"]:
+    for key in [
+        "chat_history", "chat_session", "current_scenario",
+        "prescription_notes", "prescription_submitted",
+        "model_answer_text", "evaluation_done", "last_evaluation_json",
+        "hint_text", "run_evaluation",
+    ]:
         if key in st.session_state:
             del st.session_state[key]

@@ -99,45 +99,42 @@ def check_auto_logout(user_id: str):
     from datetime import timezone
 
     now_local = datetime.now()
+    now_utc = datetime.now(timezone.utc)
     last_activity = st.session_state.get("last_activity")
 
     if last_activity is None:
-        # 新しいセッション or 再接続 → DBの last_active_at で判定
-        if "db_last_active_at" not in st.session_state:
-            try:
-                res = supabase.table("profiles") \
-                    .select("last_active_at") \
-                    .eq("id", user_id) \
-                    .execute()
-                if res.data and res.data[0].get("last_active_at"):
-                    raw = res.data[0]["last_active_at"]
-                    st.session_state["db_last_active_at"] = datetime.fromisoformat(
-                        raw.replace("Z", "+00:00")
-                    )
-            except Exception:
-                pass
-
-        db_last = st.session_state.get("db_last_active_at")
-        if db_last:
-            now_utc = datetime.now(timezone.utc)
-            if (now_utc - db_last) > timedelta(minutes=TIMEOUT_MINUTES):
-                st.query_params["expired"] = "1"
-                logout()
-                return
+        # ── 新規セッション（ブラウザ再起動・再接続） ──────────────
+        # DBの最終操作時刻を毎回直接取得して判定する
+        # （session_state のキャッシュは使わず、常に最新値を参照）
+        try:
+            res = supabase.table("profiles") \
+                .select("last_active_at") \
+                .eq("id", user_id) \
+                .execute()
+            if res.data and res.data[0].get("last_active_at"):
+                raw = res.data[0]["last_active_at"]
+                db_last = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+                if (now_utc - db_last) > timedelta(minutes=TIMEOUT_MINUTES):
+                    st.query_params["expired"] = "1"
+                    logout()
+                    return
+        except Exception:
+            pass  # DB読み取り失敗時はログアウトしない
     else:
-        # 既存セッション → session_state で判定
+        # ── 継続セッション ────────────────────────────────────────
+        # 最後の操作（rerun）から30分経過していればログアウト
         if (now_local - last_activity) > timedelta(minutes=TIMEOUT_MINUTES):
             st.query_params["expired"] = "1"
             logout()
             return
 
-    st.session_state.last_activity = now_local
+    # 最終操作時刻を現在時刻に更新
+    st.session_state["last_activity"] = now_local
 
-    # DB書き込みは1分に1回に制限
+    # DBへの書き込みは30秒に1回に制限
     last_db_write = st.session_state.get("_last_db_activity_write")
-    if last_db_write is None or (now_local - last_db_write) > timedelta(minutes=1):
+    if last_db_write is None or (now_local - last_db_write) > timedelta(seconds=30):
         try:
-            now_utc = datetime.now(timezone.utc)
             supabase.table("profiles") \
                 .update({"last_active_at": now_utc.isoformat()}) \
                 .eq("id", user_id) \

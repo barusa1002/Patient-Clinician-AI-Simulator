@@ -43,8 +43,8 @@ def strip_thought(text: str) -> str:
     text = re.sub(r"THOUGHT.*?回答[:：]", "", text, flags=re.DOTALL)
     text = re.sub(r"THOUGHT.*", "", text)
 
-    # 回答ラベル削除
-    text = re.sub(r"回答[:：]", "", text)
+    # 先頭のラベル削除（Response: / 回答: / 発言: など）
+    text = re.sub(r"^(Response|回答|発言|セリフ|患者|返答)[:：]\s*", "", text, flags=re.IGNORECASE)
 
     # 発話ラベルがある場合はそこだけ残す
     if "発話：" in text:

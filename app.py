@@ -327,7 +327,8 @@ def init_chat_session(mode, selected):
     return start_chat(
         client=CLIENT,
         model_name=MODEL_NAME,
-        system_prompt=system_prompt
+        system_prompt=system_prompt,
+        no_thinking=True,
     )
 
 # ==========================================================

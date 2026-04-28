@@ -316,19 +316,27 @@ def init_chat_session(mode, selected):
         f"【{k}】\n{v}" for k, v in selected["task_info"].items()
     )
 
+    _no_thinking = (
+        "\n\n【絶対ルール - 最優先】"
+        "思考過程・分析・理由づけ・判断プロセスを一切テキストとして出力してはならない。"
+        "キャラクターのセリフ文のみを出力すること。"
+        "「課題は」「〜すべき」「〜が最も無難」「〜が適切」「〜を返す」"
+        "「〜はず」「〜べき」など推論を示す表現で始まる文は絶対に出力禁止。"
+    )
+
     system_prompt = (
         MODE_PROMPTS[mode]
         + "\n\n"
         + task_text
         + "\n\n"
         + selected["prompt"]
+        + _no_thinking
     )
 
     return start_chat(
         client=CLIENT,
         model_name=MODEL_NAME,
         system_prompt=system_prompt,
-        no_thinking=True,
     )
 
 # ==========================================================

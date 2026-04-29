@@ -147,6 +147,46 @@ def check_auto_logout(user_id: str):
 check_auto_logout(user.id)
 
 # ==========================================================
+# ブラウザ側の非活動タイマー
+# Streamlit はユーザー操作がなければ app.py を再実行しないため、
+# サーバーサイドのみでは自動ログアウトが発動しない。
+# JS タイマーで 30 分間操作がなければ ?expired=1 へリダイレクトする。
+# ==========================================================
+_timeout_ms = TIMEOUT_MINUTES * 60 * 1000
+components.html(f"""
+<script>
+(function() {{
+    var p = window.parent;
+    var timeoutMs = {_timeout_ms};
+
+    // 毎 rerun ごとに「操作あり」としてタイマーをリセット
+    p.__lastActivity = Date.now();
+
+    // 初回のみリスナーとインターバルをセットアップ（重複防止）
+    if (!p.__idleWatcherActive) {{
+        p.__idleWatcherActive = true;
+
+        function resetActivity() {{
+            p.__lastActivity = Date.now();
+        }}
+
+        ['mousemove', 'mousedown', 'keypress', 'touchstart', 'scroll', 'click'].forEach(function(evt) {{
+            p.document.addEventListener(evt, resetActivity, {{passive: true, capture: true}});
+        }});
+
+        p.__idleInterval = setInterval(function() {{
+            if (Date.now() - p.__lastActivity > timeoutMs) {{
+                clearInterval(p.__idleInterval);
+                p.__idleWatcherActive = false;
+                p.location.href = '/?expired=1';
+            }}
+        }}, 30000); // 30秒ごとにチェック
+    }}
+}})();
+</script>
+""", height=0)
+
+# ==========================================================
 # セッションに基本情報保存
 # ==========================================================
 st.session_state.user_id = user.id

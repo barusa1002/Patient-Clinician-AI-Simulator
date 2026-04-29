@@ -54,6 +54,13 @@ def logout():
     except Exception as e:
         logger.error(f"logout error: {e}")
 
+    # @st.cache_resource キャッシュを破棄して次回アクセス時に
+    # sign_out 済みのクリーンなクライアントを再生成させる
+    try:
+        get_supabase.clear()
+    except Exception:
+        pass
+
     # Streamlit側セッションもクリア
     for key in list(st.session_state.keys()):
         del st.session_state[key]

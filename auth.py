@@ -132,13 +132,13 @@ def authenticate(email, password):
             "password": password
         })
 
-        if res.user:
-            return True, res.user
-        return False, None
+        if res.user and res.session:
+            return True, res.user, res.session
+        return False, None, None
 
     except Exception as e:
         logger.error(f"authenticate error: {e}")
-        return False, None
+        return False, None, None
 
 
 # =========================
@@ -213,7 +213,7 @@ def login_screen():
                 st.error("パスワードを入力してください")
 
             else:
-                ok, user = authenticate(email, password)
+                ok, user, session = authenticate(email, password)
 
                 if ok:
                     from datetime import datetime as _dt
@@ -224,6 +224,8 @@ def login_screen():
                     st.session_state.user_id = user_id
                     st.session_state.email = user.email
                     st.session_state.last_activity = _dt.now()
+                    st.session_state.access_token = session.access_token
+                    st.session_state.refresh_token = session.refresh_token
 
                     if profile:
                         st.session_state.role = profile.get("role", "student")

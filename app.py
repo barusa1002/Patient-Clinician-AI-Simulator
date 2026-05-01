@@ -240,7 +240,16 @@ if "is_mobile" not in st.session_state:
 st.title("患者・医療従事者役 AI シミュレーター")
 
 # ==========================================================
-# チュートリアル（🔥最優先）
+# 学習モード選択
+# ==========================================================
+from ui_mode_select import render_mode_select_page
+
+if "learning_mode" not in st.session_state:
+    render_mode_select_page()
+    st.stop()
+
+# ==========================================================
+# チュートリアル（モード選択後に表示）
 # ==========================================================
 from tutorial import run_tutorial
 
@@ -249,15 +258,6 @@ if (
     or st.session_state.get("show_tutorial", False)
 ):
     run_tutorial()
-
-# ==========================================================
-# 学習モード選択
-# ==========================================================
-from ui_mode_select import render_mode_select_page
-
-if "learning_mode" not in st.session_state:
-    render_mode_select_page()
-    st.stop()
 
 # ==========================================================
 # ページ管理

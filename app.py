@@ -84,6 +84,12 @@ if query.get("type") == "recovery":
 # ==========================================================
 from db import get_current_user, logout, supabase
 
+# JSタイマーが /?expired=1 へリダイレクトした後、
+# セッションが残っていれば確実にクリアする
+if st.query_params.get("expired") == "1" and st.session_state.get("access_token"):
+    logout()
+    # logout() の中で st.rerun() が呼ばれるので以下には到達しない
+
 user = get_current_user()
 
 if not user:
@@ -153,53 +159,20 @@ check_auto_logout(user.id)
 # JS タイマーで 30 分間操作がなければ ?expired=1 へリダイレクトする。
 # ==========================================================
 _timeout_ms = TIMEOUT_MINUTES * 60 * 1000
-_uid = user.id
 components.html(f"""
 <script>
 (function() {{
     var p = window.parent;
-    var timeoutMs = {_timeout_ms};
-    // ユーザーIDをキーに含めて別アカウントと干渉しない
-    var STORAGE_KEY = '__sim_last_activity_{_uid}';
-
-    // ① ページロード時チェック（タブ再オープン・リロード後もここで判定）
-    try {{
-        var stored = p.localStorage.getItem(STORAGE_KEY);
-        if (stored && (Date.now() - parseInt(stored)) > timeoutMs) {{
-            p.localStorage.removeItem(STORAGE_KEY);
-            p.location.href = '/?expired=1';
-            return;
-        }}
-    }} catch(e) {{}}
-
-    // ② 現在時刻を記録（rerun = 何らかの操作あり）
-    try {{ p.localStorage.setItem(STORAGE_KEY, Date.now()); }} catch(e) {{}}
-
-    // ③ 初回のみイベントリスナーとインターバルをセットアップ（重複防止）
-    if (!p.__idleWatcherActive) {{
-        p.__idleWatcherActive = true;
-
-        function resetActivity() {{
-            try {{ p.localStorage.setItem(STORAGE_KEY, Date.now()); }} catch(e) {{}}
-        }}
-
-        ['mousemove', 'mousedown', 'keypress', 'touchstart', 'scroll', 'click'].forEach(function(evt) {{
-            p.document.addEventListener(evt, resetActivity, {{passive: true, capture: true}});
-        }});
-
-        // 30秒ごとにアイドル時間をチェック（タブが開いたままの場合）
-        p.__idleInterval = setInterval(function() {{
-            try {{
-                var last = parseInt(p.localStorage.getItem(STORAGE_KEY) || Date.now());
-                if (Date.now() - last > timeoutMs) {{
-                    clearInterval(p.__idleInterval);
-                    p.__idleWatcherActive = false;
-                    p.localStorage.removeItem(STORAGE_KEY);
-                    p.location.href = '/?expired=1';
-                }}
-            }} catch(e) {{}}
-        }}, 30000);
+    // rerun のたびにこのスクリプトが再実行される。
+    // 前のタイマーをキャンセルして新しいタイマーをセットすることで
+    // 「操作のたびにリセット・30分無操作で発火」を実現する。
+    if (p.__idleTimer) {{
+        clearTimeout(p.__idleTimer);
     }}
+    p.__idleTimer = setTimeout(function() {{
+        p.__idleTimer = null;
+        p.location.href = '/?expired=1';
+    }}, {_timeout_ms});
 }})();
 </script>
 """, height=0)

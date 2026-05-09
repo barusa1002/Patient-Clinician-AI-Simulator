@@ -445,6 +445,30 @@ def render_chat_page(
 
         st.markdown("---")
 
+        # ── PDF ダウンロード ──────────────────────────
+        eval_json = st.session_state.get("last_evaluation_json")
+        if eval_json:
+            try:
+                from pdf_export import generate_evaluation_pdf
+                pdf_bytes = generate_evaluation_pdf(
+                    scenario=scenario,
+                    subscenario=subscenario,
+                    chat_history=st.session_state.chat_history,
+                    evaluation_json=eval_json,
+                    learning_mode=st.session_state.get("learning_mode", "スタンダードモード"),
+                )
+                now_label = __import__("datetime").datetime.now().strftime("%Y%m%d_%H%M")
+                filename = f"評価レポート_{scenario}_{now_label}.pdf"
+                st.download_button(
+                    label="📄 評価レポートをPDFで保存",
+                    data=pdf_bytes,
+                    file_name=filename,
+                    mime="application/pdf",
+                    use_container_width=True,
+                )
+            except Exception as e:
+                st.warning(f"PDF生成に失敗しました：{e}")
+
         if st.button("📖 模範解答を見る"):
             import re as _re
 

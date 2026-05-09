@@ -396,16 +396,6 @@ if st.session_state.get("chat_session") is None:
 # 疑義照会：受付が最初に電話に出るグリーティングを生成
 # chat_history が空の時だけ実行（シナリオ開始時の1回のみ）
 # ==========================================================
-if scenario == "疑義照会" and not st.session_state.chat_history:
-    _hosp = "病院"
-    for _line in selected.get("task_info", {}).get("患者情報", "").split("\n"):
-        if "照会先病院名" in _line:
-            _hosp = _line.split("：", 1)[-1].strip()
-            break
-    st.session_state.chat_history.append(
-        ("assistant", f"お電話ありがとうございます。{_hosp}でございます。")
-    )
-
 # ==========================================================
 # UI
 # ==========================================================

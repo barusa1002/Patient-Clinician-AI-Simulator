@@ -44,7 +44,9 @@ def _register_font() -> bool:
 
 
 def _style(name: str, **kwargs) -> ParagraphStyle:
-    return ParagraphStyle(name, fontName=_FONT_NAME, **kwargs)
+    # fontName を setdefault で設定することで二重渡しによる TypeError を防ぐ
+    kwargs.setdefault('fontName', _FONT_NAME)
+    return ParagraphStyle(name, **kwargs)
 
 
 def generate_evaluation_pdf(
@@ -80,13 +82,14 @@ def generate_evaluation_pdf(
     C_BLUE   = colors.HexColor("#1d4ed8")
     C_DARK   = colors.HexColor("#1f2937")
 
-    title_style   = _style("title",  fontSize=17, textColor=C_DARK,   spaceAfter=3)
-    meta_style    = _style("meta",   fontSize=9,  textColor=C_GRAY,   spaceAfter=2)
-    h1_style      = _style("h1",     fontSize=13, textColor=C_PURPLE, spaceBefore=10, spaceAfter=4, leading=18)
-    body_style    = _style("body",   fontSize=10, textColor=C_DARK,   spaceAfter=3,   leading=16)
-    small_style   = _style("small",  fontSize=9,  textColor=C_GRAY,   spaceAfter=2)
-    user_style    = _style("user",   fontSize=10, textColor=C_BLUE,   spaceAfter=2,   leading=15, leftIndent=4)
-    ai_style      = _style("ai",     fontSize=10, textColor=C_GREEN,  spaceAfter=2,   leading=15, leftIndent=4)
+    title_style   = _style("ev_title",  fontSize=17, textColor=C_DARK,   spaceAfter=3)
+    meta_style    = _style("ev_meta",   fontSize=9,  textColor=C_GRAY,   spaceAfter=2)
+    h1_style      = _style("ev_h1",     fontSize=13, textColor=C_PURPLE, spaceBefore=10, spaceAfter=4, leading=18)
+    body_style    = _style("ev_body",   fontSize=10, textColor=C_DARK,   spaceAfter=3,   leading=16)
+    small_style   = _style("ev_small",  fontSize=9,  textColor=C_GRAY,   spaceAfter=2)
+    mi_style      = _style("ev_mi",     fontSize=10, textColor=C_DARK,   spaceBefore=4,  spaceAfter=1, leading=15)
+    user_style    = _style("ev_user",   fontSize=10, textColor=C_BLUE,   spaceAfter=2,   leading=15, leftIndent=4)
+    ai_style      = _style("ev_ai",     fontSize=10, textColor=C_GREEN,  spaceAfter=2,   leading=15, leftIndent=4)
 
     def hr_thick():
         return HRFlowable(width="100%", thickness=2, color=C_PURPLE, spaceAfter=4)
@@ -152,7 +155,7 @@ def generate_evaluation_pdf(
     missing_items = evaluation_json.get("missing", [])
     if missing_items:
         for m in missing_items:
-            elems.append(Paragraph(f"▶　{m.get('item', '')}", _style("mi", fontSize=10, textColor=C_DARK, spaceBefore=4, spaceAfter=1, leading=15)))
+            elems.append(Paragraph(f"▶　{m.get('item', '')}", mi_style))
             elems.append(Paragraph(f"　理由：{m.get('reason', '')}", small_style))
     else:
         elems.append(Paragraph("（該当なし）", small_style))

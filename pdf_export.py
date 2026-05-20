@@ -155,8 +155,15 @@ def generate_evaluation_pdf(
     missing_items = evaluation_json.get("missing", [])
     if missing_items:
         for m in missing_items:
-            elems.append(Paragraph(f"▶　{m.get('item', '')}", mi_style))
-            elems.append(Paragraph(f"　理由：{m.get('reason', '')}", small_style))
+            if isinstance(m, dict):
+                m_item = m.get('item', '')
+                m_reason = m.get('reason', '')
+            else:
+                m_item = str(m)
+                m_reason = ''
+            elems.append(Paragraph(f"▶　{m_item}", mi_style))
+            if m_reason:
+                elems.append(Paragraph(f"　理由：{m_reason}", small_style))
     else:
         elems.append(Paragraph("（該当なし）", small_style))
     elems.append(Spacer(1, 3 * mm))

@@ -279,7 +279,10 @@ def render_evaluation_history(histories, show_detail=True):
 
             st.markdown("### ⚠ 不足項目")
             for m in evaluation.get("missing", []):
-                item = m.get("item", "不明")
+                if isinstance(m, dict):
+                    item = m.get("item", "不明")
+                else:
+                    item = str(m)
                 st.markdown(f"- {item}")
 
             if show_detail:

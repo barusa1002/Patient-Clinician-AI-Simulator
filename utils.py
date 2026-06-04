@@ -3,6 +3,7 @@
 
 
 import re
+import urllib.parse
 import streamlit as st
 
 # Gemini 2.5が思考プロセスを出力するときに現れるキーワード一覧
@@ -85,6 +86,72 @@ def detect_mobile() -> bool:
         return any(keyword in user_agent for keyword in MOBILE_KEYWORDS)
     except Exception:
         return False
+
+
+# ==========================================================
+# 処方内容HTML生成（薬品名にPMDA添付文書リンクを付与）
+# ==========================================================
+_DRUG_UNITS_RE = re.compile(
+    r'(錠|カプセル|カプセル剤|散|液|テープ|パッチ|OD|DS|エアー|坐剤|吸入|mg|μg|mL|mcg)'
+)
+_SKIP_PREFIXES = (
+    "用法", "用量", "日数", "副作用", "効果", "残薬",
+    "1回", "1日", "注意", "【", "発作", "包装", "使用",
+    "血圧", "血糖", "鎮痛", "抗炎", "胃酸", "利尿", "（",
+)
+
+
+def make_prescription_html(prescription_text: str) -> str:
+    """処方テキストの薬品名行にPMDA添付文書リンクを付けてHTML文字列で返す。"""
+
+    def pmda_url(name: str) -> str:
+        return (
+            "https://www.pmda.go.jp/PmdaSearch/iyakuSearch/"
+            f"?name={urllib.parse.quote(name)}"
+        )
+
+    lines_html = []
+    for raw in prescription_text.split('\n'):
+        line = raw.strip()
+        if not line:
+            lines_html.append('')
+            continue
+
+        # 「推奨薬：薬品名」形式の行
+        if line.startswith('推奨薬：'):
+            drug_name = line[4:]
+            lines_html.append(
+                f'推奨薬：<a href="{pmda_url(drug_name)}" target="_blank"'
+                f' style="color:#7c3aed">{drug_name}</a>'
+            )
+            continue
+
+        # スキップ行（用法・副作用説明など）
+        if any(line.startswith(s) for s in _SKIP_PREFIXES):
+            lines_html.append(line)
+            continue
+
+        # 薬品名行の判定（mg・錠などの単位を含む行）
+        if _DRUG_UNITS_RE.search(line):
+            # "Rp1：" などのプレフィックスを除去
+            clean = re.sub(r'^Rp\d+[：:]\s*', '', line)
+            prefix = line[: len(line) - len(clean)]
+
+            # 最初の数字の直前までを薬品名とする
+            m = re.match(r'^([^\d]+?)[\s]*[\d.]', clean)
+            if m:
+                drug_name = m.group(1).strip()
+            else:
+                drug_name = clean.split()[0] if clean.split() else clean
+
+            lines_html.append(
+                f'{prefix}<a href="{pmda_url(drug_name)}" target="_blank"'
+                f' style="color:#7c3aed">{clean}</a>'
+            )
+        else:
+            lines_html.append(line)
+
+    return '<br>'.join(lines_html)
 
 
 # ==========================================================

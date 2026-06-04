@@ -281,6 +281,31 @@ EVALUATION_CHECKLISTS = {
     "終了挨拶": None,
 },
 
+"喘息・COPDの吸入指導|サブシナリオ①：DPI（ドライパウダー吸入器）の吸入指導": {
+    "患者呼び入れ・あいさつ": None,
+    "自己紹介": None,
+    "体調確認": None,
+    "吸入薬使用歴確認": None,
+    "アレルギー・副作用歴確認": None,
+    "薬剤提示": None,
+    "薬剤名・効果説明（ブデソニド：炎症抑制／ホルモテロール：気管支拡張）": None,
+    "用法用量説明（1回2吸入・1日2回・朝夕）": None,
+    "キャップの外し方説明": None,
+    "吸入器各部位の説明（吸入口・通気口・残量計・グリップ）": None,
+    "グリップ操作説明（右へ止まるまで→左にカチンと音が鳴るまで）": None,
+    "吸入動作説明（息を吐ききる→深く大きく5秒吸入）": None,
+    "吸入後の息止め説明（5秒）": None,
+    "2回目吸入の案内": None,
+    "うがい指導（口・のどを3回）": None,
+    "うがいの理由説明（カンジダ・全身副作用予防）": None,
+    "トレーニング機器での吸入確認": None,
+    "発作時追加吸入の確認・説明（追加4吸入・計8吸入まで）": None,
+    "新規開封時の初回操作説明（左に4回カチン）": None,
+    "残量計の説明（0で赤色→交換）": None,
+    "質問確認": None,
+    "終了挨拶": None,
+},
+
 "OTC相談・受診勧奨": {
     "あいさつ・自己紹介": None,
     "相談内容・主訴の確認": None,
@@ -541,8 +566,9 @@ def build_evaluation_prompt(scenario, subscenario, chat_history, prescription_no
         speaker = "実習生" if role == "user" else "患者・医療者"
         conversation += f"{speaker}：{msg}\n"
 
-    # 評価項目取得（辞書のキーを使用）
-    checklist = EVALUATION_CHECKLISTS.get(scenario, {})
+    # 評価項目取得（サブシナリオ別→シナリオ別の順でフォールバック）
+    sub_key = f"{scenario}|{subscenario}"
+    checklist = EVALUATION_CHECKLISTS.get(sub_key) or EVALUATION_CHECKLISTS.get(scenario, {})
 
     checklist_text = "\n".join(
         f"- {item}" for item in checklist

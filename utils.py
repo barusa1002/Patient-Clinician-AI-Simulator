@@ -98,13 +98,42 @@ _SKIP_PREFIXES = (
     "用法", "用量", "日数", "副作用", "効果", "残薬",
     "1回", "1日", "注意", "【", "発作", "包装", "使用",
     "血圧", "血糖", "鎮痛", "抗炎", "胃酸", "利尿", "（",
+    "処方提案", "理由", "現在の処方",
 )
+
+# 薬品名キーワード → PMDA添付文書直接URL（後発品優先）
+_DRUG_URL_MAP = {
+    "ロキソプロフェン":  "https://www.info.pmda.go.jp/go/pack/1149019F1706_1_03/",
+    "ロキソニン":        "https://www.info.pmda.go.jp/go/pack/1149019F1706_1_03/",
+    "アムロジピン":      "https://www.info.pmda.go.jp/go/pack/2171022F1134_1_20/",
+    "フロセミド":        "https://www.info.pmda.go.jp/go/pack/2139005F1079_1_15/",
+    "フェキソフェナジン": "https://www.info.pmda.go.jp/go/pack/4490023F1121_1_04/",
+    "アレグラ錠":        "https://www.info.pmda.go.jp/go/pack/4490023F1121_1_04/",
+    "ドネペジル":        "https://www.info.pmda.go.jp/go/pack/1190012C1046_1_12/",
+    "メトホルミン":      "https://www.info.pmda.go.jp/go/pack/3962002F1110_1_06/",
+    "ツロブテロール":    "https://www.info.pmda.go.jp/go/pack/2259707S1152_6_07/",
+    "ホクナリン":        "https://www.info.pmda.go.jp/go/pack/2259707S1152_6_07/",
+    "エナラプリル":      "https://www.info.pmda.go.jp/go/pack/2144002F1300_1_06/",
+    "カンデサルタン":    "https://www.info.pmda.go.jp/go/pack/2149040F1239_1_06/",
+    "ランソプラゾール":  "https://www.info.pmda.go.jp/go/pack/2329023F1080_1_14/",
+    "アセトアミノフェン": "https://www.info.pmda.go.jp/go/pack/1141007F1195_1_13/",
+    "トラネキサム酸":    "https://www.info.pmda.go.jp/go/pack/3327002F1169_1_05/",
+    "ワーファリン":      "https://www.info.pmda.go.jp/go/pack/3332001F1083_1_20/",
+    "ワルファリン":      "https://www.info.pmda.go.jp/go/pack/3332001F1083_1_20/",
+    "メプチン":          "https://www.info.pmda.go.jp/go/pack/2259704G9033_1_09/",
+    "パブロンゴールドA": "https://www.info.pmda.go.jp/ogo/K1506000007_06_01",
+    "アレグラFX":        "https://www.info.pmda.go.jp/ogo/J1201000287_06_03",
+    "ガスター10":        "https://www.info.pmda.go.jp/ogo/K1103000023_05_01",
+}
 
 
 def make_prescription_html(prescription_text: str) -> str:
     """処方テキストの薬品名行にPMDA添付文書リンクを付けてMarkdown文字列で返す。"""
 
     def pmda_url(name: str) -> str:
+        for key, url in _DRUG_URL_MAP.items():
+            if key in name:
+                return url
         return (
             "https://www.pmda.go.jp/PmdaSearch/iyakuSearch/"
             f"?name={urllib.parse.quote(name)}"

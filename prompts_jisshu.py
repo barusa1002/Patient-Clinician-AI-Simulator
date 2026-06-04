@@ -563,6 +563,12 @@ JISSHU_SCENARIO_PROMPTS = {
                         "主な副作用：口腔カンジダ症、嗄声、動悸、不整脈\n"
                         "使用後：必ずうがいをする"
                     ),
+                    "参考資料": [
+                        {
+                            "label": "📄 ブデホル 吸入指導箋",
+                            "url": "https://medical.nihon-generic.co.jp/uploadfiles/materials/BUDEF00_GUIDE1.pdf",
+                        }
+                    ],
                 },
                 "prompt": """
 あなたは気管支喘息の診断を受け、初めて吸入薬を処方された患者です。

@@ -64,6 +64,12 @@ def render_sidebar(
         from utils import make_prescription_html
         st.markdown(make_prescription_html(task_info_display["処方内容"]))
 
+        refs = selected["task_info"].get("参考資料")
+        if refs:
+            st.markdown("### 📚 参考資料")
+            for ref in refs:
+                st.markdown(f"[{ref['label']}]({ref['url']})")
+
         st.markdown(f"### 🕒 日時\n{current_datetime}")
 
     # ============================

@@ -62,10 +62,7 @@ def render_sidebar(
 
         st.markdown("### 💊 処方内容")
         from utils import make_prescription_html
-        st.markdown(
-            make_prescription_html(task_info_display["処方内容"]),
-            unsafe_allow_html=True
-        )
+        st.markdown(make_prescription_html(task_info_display["処方内容"]))
 
         st.markdown(f"### 🕒 日時\n{current_datetime}")
 

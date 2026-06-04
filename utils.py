@@ -102,7 +102,7 @@ _SKIP_PREFIXES = (
 
 
 def make_prescription_html(prescription_text: str) -> str:
-    """処方テキストの薬品名行にPMDA添付文書リンクを付けてHTML文字列で返す。"""
+    """処方テキストの薬品名行にPMDA添付文書リンクを付けてMarkdown文字列で返す。"""
 
     def pmda_url(name: str) -> str:
         return (
@@ -110,25 +110,22 @@ def make_prescription_html(prescription_text: str) -> str:
             f"?name={urllib.parse.quote(name)}"
         )
 
-    lines_html = []
+    lines_md = []
     for raw in prescription_text.split('\n'):
         line = raw.strip()
         if not line:
-            lines_html.append('')
+            lines_md.append('')
             continue
 
         # 「推奨薬：薬品名」形式の行
         if line.startswith('推奨薬：'):
             drug_name = line[4:]
-            lines_html.append(
-                f'推奨薬：<a href="{pmda_url(drug_name)}" target="_blank"'
-                f' style="color:#7c3aed">{drug_name}</a>'
-            )
+            lines_md.append(f'推奨薬：[{drug_name}]({pmda_url(drug_name)})')
             continue
 
         # スキップ行（用法・副作用説明など）
         if any(line.startswith(s) for s in _SKIP_PREFIXES):
-            lines_html.append(line)
+            lines_md.append(line)
             continue
 
         # 薬品名行の判定（mg・錠などの単位を含む行）
@@ -144,14 +141,11 @@ def make_prescription_html(prescription_text: str) -> str:
             else:
                 drug_name = clean.split()[0] if clean.split() else clean
 
-            lines_html.append(
-                f'{prefix}<a href="{pmda_url(drug_name)}" target="_blank"'
-                f' style="color:#7c3aed">{clean}</a>'
-            )
+            lines_md.append(f'{prefix}[{clean}]({pmda_url(drug_name)})')
         else:
-            lines_html.append(line)
+            lines_md.append(line)
 
-    return '<br>'.join(lines_html)
+    return '  \n'.join(lines_md)
 
 
 # ==========================================================

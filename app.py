@@ -1,7 +1,8 @@
 #app.py
 import streamlit as st
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone, time as dt_time
+_JST = timezone(timedelta(hours=9))
 
 # ==========================================================
 # ページ設定（⚠️最上部）
@@ -300,7 +301,7 @@ else:  # スタンダードモード（デフォルト）
 # ==========================================================
 from sidebar import render_sidebar
 
-current_datetime = datetime.now().strftime("%Y年%m月%d日 %H時%M分")
+current_datetime = datetime.now(_JST).strftime("%Y年%m月%d日 %H時%M分")
 
 mode, scenario, subscenario, selected = render_sidebar(
     SCENARIOS,

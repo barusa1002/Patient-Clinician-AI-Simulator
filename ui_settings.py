@@ -75,7 +75,19 @@ def render_settings_page():
     # ===============================
     # レーダーチャート
     # ===============================
-    st.markdown("## 📊 9課題の達成率")
+    learning_mode = st.session_state.get("learning_mode", "スタンダードモード")
+
+    if learning_mode == "スキルアップモード":
+        from prompts_jisshu import JISSHU_SCENARIOS as _SCENARIOS
+    elif learning_mode == "初期研修":
+        from prompts_kenshu import KENSHU_SCENARIOS as _SCENARIOS
+    else:
+        from prompts import SCENARIOS as _SCENARIOS
+
+    radar_categories = [s for ss in _SCENARIOS.values() for s in ss]
+    n_tasks = len(radar_categories)
+
+    st.markdown(f"## 📊 {n_tasks}課題の達成率（{learning_mode}）")
 
     mode = st.radio(
         "表示方法",
@@ -85,7 +97,7 @@ def render_settings_page():
 
     evaluations = load_user_evaluations(user_id)
 
-    render_radar_chart(evaluations, mode)
+    render_radar_chart(evaluations, mode, categories=radar_categories)
 
     # ===============================
     # 評価履歴

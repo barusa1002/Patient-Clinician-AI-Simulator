@@ -50,21 +50,22 @@ def normalize_evaluation(h):
 # ===============================
 # レーダーチャート
 # ===============================
-def render_radar_chart(histories, mode="平均"):
+def render_radar_chart(histories, mode="平均", categories=None):
 
     font_prop = get_font_prop()
 
-    categories = [
-        "薬局での患者応対",
-        "病棟での初回面談",
-        "来局者応対",
-        "在宅での薬学的管理",
-        "薬局での薬剤交付",
-        "病棟での服薬指導",
-        "一般医薬品の情報提供",
-        "疑義照会",
-        "医療従事者への情報提供"
-    ]
+    if categories is None:
+        categories = [
+            "薬局での患者応対",
+            "病棟での初回面談",
+            "来局者応対",
+            "在宅での薬学的管理",
+            "薬局での薬剤交付",
+            "病棟での服薬指導",
+            "一般医薬品の情報提供",
+            "疑義照会",
+            "医療従事者への情報提供"
+        ]
 
     category_scores = {c: [] for c in categories}
 

@@ -324,12 +324,17 @@ def render_chat_page(
         _render_prescription_form()
 
     # ==================================================
-    # SOAP薬歴フォーム（スキルアップモード・薬局実習のみ）
+    # SOAP薬歴フォーム（スキルアップモード・薬局/病院実習のみ）
     # ==================================================
     _learning_mode = st.session_state.get("learning_mode", "")
     _is_soap_target = _learning_mode == "スキルアップモード" and mode in ("薬局実習", "病院実習")
     if _is_soap_target and has_history:
-        _render_soap_form()
+        if not st.session_state.get("show_soap_form") and not st.session_state.get("soap_submitted"):
+            if st.button("📝 SOAP薬歴を記入する", key="soap_open_btn"):
+                st.session_state["show_soap_form"] = True
+                st.rerun()
+        if st.session_state.get("show_soap_form") or st.session_state.get("soap_submitted"):
+            _render_soap_form()
 
     # ==================================================
     # 評価実行

@@ -230,7 +230,7 @@ def reset_session():
     for key in [
         "chat_history", "chat_session", "current_scenario",
         "prescription_notes", "prescription_submitted",
-        "soap_notes", "soap_submitted",
+        "soap_notes", "soap_submitted", "show_soap_form",
         "model_answer_text", "evaluation_done", "last_evaluation_json",
         "hint_text", "run_evaluation",
     ]:

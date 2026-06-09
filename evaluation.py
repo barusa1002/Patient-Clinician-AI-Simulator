@@ -545,7 +545,8 @@ EVALUATION_CHECKLISTS = {
 # AI評価プロンプト作成
 # ==========================================================
 
-def build_evaluation_prompt(scenario, subscenario, chat_history, prescription_notes=None):
+def build_evaluation_prompt(scenario, subscenario, chat_history,
+                            prescription_notes=None, soap_notes=None):
 
     conversation = ""
     for role, msg in chat_history:
@@ -575,6 +576,37 @@ def build_evaluation_prompt(scenario, subscenario, chat_history, prescription_no
         else:
             prescription_section = "\n【処方箋備考欄】未記入\n"
 
+    # SOAP薬歴セクション
+    soap_section = ""
+    soap_json_instruction = ""
+    if soap_notes:
+        soap_section = f"""
+【SOAP薬歴（学生が記載）】
+S（主観的情報）: {soap_notes.get('S') or '（未記載）'}
+O（客観的情報）: {soap_notes.get('O') or '（未記載）'}
+A（評　　　価）: {soap_notes.get('A') or '（未記載）'}
+P（計　　　画）: {soap_notes.get('P') or '（未記載）'}
+"""
+        soap_json_instruction = (
+            '  "soap": {\n'
+            '    "S": {"score": 0, "comment": "評価コメント"},\n'
+            '    "O": {"score": 0, "comment": "評価コメント"},\n'
+            '    "A": {"score": 0, "comment": "評価コメント"},\n'
+            '    "P": {"score": 0, "comment": "評価コメント"},\n'
+            '    "overall": "SOAP薬歴の総合コメント"\n'
+            '  },\n'
+        )
+        soap_rule = """
+【SOAP薬歴の評価基準】（各項目0〜2点）
+2=十分に記載できている / 1=記載はあるが不十分 / 0=未記載または誤り
+S：会話から得た患者の主訴・発言・訴えが適切に記載されているか
+O：処方薬・用法・検査値等の客観的情報が正確に記載されているか
+A：服薬上の問題点・理解度・アドヒアランスの評価が適切か
+P：指導内容・次回フォロー計画が具体的に記載されているか
+"""
+    else:
+        soap_rule = ""
+
     prompt = f"""
 あなたは薬学実習の評価者です。
 以下の会話を客観的に評価してください。
@@ -583,28 +615,28 @@ def build_evaluation_prompt(scenario, subscenario, chat_history, prescription_no
 {scenario} / {subscenario}
 
 【会話ログ】
-{conversation}{prescription_section}
+{conversation}{prescription_section}{soap_section}
 【評価項目】
 {checklist_text}
-
+{soap_rule}
 【評価ルール】
 
-1 = 達成  
-0 = 未達成  
+1 = 達成
+0 = 未達成
 null = 会話から判断できない
 
 重要ルール：
 
-・scoresには必ず上記の評価項目のみ含める  
-・新しい評価項目を追加しない  
-・評価項目を省略しない  
+・scoresには必ず上記の評価項目のみ含める
+・新しい評価項目を追加しない
+・評価項目を省略しない
 
 【出力形式】
 
 必ず以下のJSONのみ出力してください。
 
 {{
-  "scores": {{
+{soap_json_instruction}  "scores": {{
     "評価項目": 1
   }},
   "achieved": [
@@ -632,7 +664,7 @@ JSON以外の文章は絶対に出力しない。
 # 評価保存（Supabase版）
 # ==========================================================
 def save_evaluation(user_id, scenario, subscenario, chat_history, evaluation_text,
-                    prescription_notes=None):
+                    prescription_notes=None, soap_notes=None):
 
     try:
         eval_data = {
@@ -641,6 +673,8 @@ def save_evaluation(user_id, scenario, subscenario, chat_history, evaluation_tex
         }
         if prescription_notes:
             eval_data["prescription_notes"] = prescription_notes
+        if soap_notes:
+            eval_data["soap_notes"] = soap_notes
 
         supabase.table("evaluations").insert({
             "user_id": user_id,

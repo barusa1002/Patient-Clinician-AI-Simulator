@@ -412,7 +412,8 @@ if st.session_state.page == "chat":
         scenario=scenario,
         subscenario=subscenario,
         chat_session=st.session_state.chat_session,
-        selected=selected
+        selected=selected,
+        mode=mode,
     )
 
 elif st.session_state.page == "settings":

@@ -84,11 +84,62 @@ def _render_prescription_form():
 
 
 
+# ==================================================
+# SOAP薬歴入力フォーム（薬局実習・スキルアップモード用）
+# ==================================================
+def _render_soap_form():
+    st.markdown("---")
+    st.markdown("### 📝 SOAP薬歴入力")
+    st.caption("服薬指導が終わったら SOAP 形式で薬歴を記入してください。記入後にAI評価を実行すると薬歴も一緒に評価されます。")
+
+    if st.session_state.get("soap_submitted"):
+        notes = st.session_state.get("soap_notes", {})
+        st.success("✅ SOAP薬歴を記録しました")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(f"**S（主観的情報）**\n\n{notes.get('S') or '（未記載）'}")
+            st.markdown(f"**O（客観的情報）**\n\n{notes.get('O') or '（未記載）'}")
+        with col2:
+            st.markdown(f"**A（評価）**\n\n{notes.get('A') or '（未記載）'}")
+            st.markdown(f"**P（計画）**\n\n{notes.get('P') or '（未記載）'}")
+        if st.button("📝 再記入する", key="soap_redo"):
+            st.session_state["soap_submitted"] = False
+            st.rerun()
+        return
+
+    with st.form("soap_form"):
+        s = st.text_area(
+            "S（Subjective / 主観的情報）",
+            placeholder="患者の訴え・発言例：「副作用が心配です」「飲み忘れることがある」など",
+            height=80,
+        )
+        o = st.text_area(
+            "O（Objective / 客観的情報）",
+            placeholder="処方薬・用法・バイタル・検査値など",
+            height=80,
+        )
+        a = st.text_area(
+            "A（Assessment / 評価）",
+            placeholder="確認できた問題点・理解度・アドヒアランス状況など",
+            height=80,
+        )
+        p = st.text_area(
+            "P（Plan / 計画）",
+            placeholder="指導内容・次回フォロー計画など",
+            height=80,
+        )
+        if st.form_submit_button("📝 記録する"):
+            st.session_state["soap_notes"] = {"S": s, "O": o, "A": a, "P": p}
+            st.session_state["soap_submitted"] = True
+            st.rerun()
+
+
 def render_chat_page(
     scenario,
     subscenario,
     chat_session,
     selected,
+    mode="",
 ):
     # スマホ判定（毎回取得）
     IS_MOBILE = st.session_state.get("is_mobile", False)
@@ -273,6 +324,14 @@ def render_chat_page(
         _render_prescription_form()
 
     # ==================================================
+    # SOAP薬歴フォーム（スキルアップモード・薬局実習のみ）
+    # ==================================================
+    _learning_mode = st.session_state.get("learning_mode", "")
+    _is_soap_target = _learning_mode == "スキルアップモード" and mode == "薬局実習"
+    if _is_soap_target and has_history:
+        _render_soap_form()
+
+    # ==================================================
     # 評価実行
     # ==================================================
     if st.session_state.get("run_evaluation"):
@@ -283,11 +342,18 @@ def render_chat_page(
             else None
         )
 
+        soap_notes = (
+            st.session_state.get("soap_notes")
+            if _is_soap_target and st.session_state.get("soap_submitted")
+            else None
+        )
+
         eval_prompt = build_evaluation_prompt(
             scenario,
             subscenario,
             st.session_state.chat_history,
             prescription_notes=prescription_notes,
+            soap_notes=soap_notes,
         )
 
         raw_eval = None
@@ -361,6 +427,7 @@ def render_chat_page(
             chat_history=st.session_state.chat_history,
             evaluation_text=evaluation_json,
             prescription_notes=prescription_notes,
+            soap_notes=soap_notes,
         )
 
         # =============================
@@ -433,6 +500,33 @@ def render_chat_page(
             st.markdown(evaluation_json["comment"])
         else:
             st.markdown("（総合評価なし）")
+
+        # ==================================================
+        # ⑤ SOAP薬歴評価（提出した場合のみ）
+        # ==================================================
+        soap_eval = evaluation_json.get("soap")
+        if soap_eval:
+            st.markdown("---")
+            st.markdown("## ⑤ SOAP薬歴評価")
+
+            _score_label = {0: "🔴 未記載/誤り", 1: "🟡 不十分", 2: "🟢 十分"}
+            for section in ["S", "O", "A", "P"]:
+                sec_data = soap_eval.get(section, {})
+                score = sec_data.get("score", 0)
+                comment = sec_data.get("comment", "")
+                label_map = {
+                    "S": "S（主観的情報）",
+                    "O": "O（客観的情報）",
+                    "A": "A（評価）",
+                    "P": "P（計画）",
+                }
+                st.markdown(f"**{label_map[section]}** {_score_label.get(score, str(score))}点")
+                if comment:
+                    st.caption(comment)
+
+            overall = soap_eval.get("overall", "")
+            if overall:
+                st.info(f"**SOAP総合**：{overall}")
 
         st.session_state.run_evaluation = False
         st.session_state["evaluation_done"] = True

@@ -327,7 +327,7 @@ def render_chat_page(
     # SOAP薬歴フォーム（スキルアップモード・薬局実習のみ）
     # ==================================================
     _learning_mode = st.session_state.get("learning_mode", "")
-    _is_soap_target = _learning_mode == "スキルアップモード" and mode == "薬局実習"
+    _is_soap_target = _learning_mode == "スキルアップモード" and mode in ("薬局実習", "病院実習")
     if _is_soap_target and has_history:
         _render_soap_form()
 

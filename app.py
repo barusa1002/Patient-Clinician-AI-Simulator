@@ -228,13 +228,6 @@ if "is_mobile" not in st.session_state:
 # ==========================================================
 st.title("患者・医療従事者役 AI シミュレーター")
 
-# ゲストモードバナー
-if st.session_state.get("guest_mode"):
-    st.info("👥 **ゲストモードで利用中** — 評価結果はこのセッション内のみ有効です。登録すると履歴が保存されます。")
-    if st.button("📝 新規登録してデータを保存する"):
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        st.rerun()
 
 # ==========================================================
 # 学習モード選択

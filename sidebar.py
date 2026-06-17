@@ -121,14 +121,15 @@ def render_sidebar(
     # ============================
     st.sidebar.markdown("---")
 
-    with st.sidebar.expander("👤 ログイン情報", expanded=True):
-        if st.session_state.get("guest_mode"):
-            st.write("**👥 ゲストユーザー**")
-            if st.button("📝 新規登録 / ログイン"):
-                for key in list(st.session_state.keys()):
-                    del st.session_state[key]
-                st.rerun()
-        else:
+    if st.session_state.get("guest_mode"):
+        st.sidebar.markdown("---")
+        st.sidebar.caption("👥 ゲストモード（履歴保存なし）")
+        if st.sidebar.button("📝 登録してデータを保存する", use_container_width=True):
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            st.rerun()
+    else:
+        with st.sidebar.expander("👤 ログイン情報", expanded=True):
             st.write(f"**{st.session_state.get('email', '')}**")
             if st.button("🚪 ログアウト"):
                 logout()

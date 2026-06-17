@@ -306,6 +306,20 @@ def login_screen():
                 # エラーメッセージは create_user 内で表示済みのため追加表示しない
 
     # ---------------------------
+    # ゲストモード
+    # ---------------------------
+    st.markdown("---")
+    st.markdown(
+        "<div style='text-align:center; color:#9CA3AF; font-size:0.9rem;'>登録なしでお試しいただけます</div>",
+        unsafe_allow_html=True
+    )
+    col_g1, col_g2, col_g3 = st.columns([1, 2, 1])
+    with col_g2:
+        if st.button("👥 ゲストとして試す", key="guest_btn", use_container_width=True):
+            st.session_state.guest_mode = True
+            st.rerun()
+
+    # ---------------------------
     # お知らせ
     # ---------------------------
     st.markdown("---")

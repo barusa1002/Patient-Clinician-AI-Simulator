@@ -98,8 +98,9 @@ def render_sidebar(
     st.sidebar.markdown("---")
     st.sidebar.subheader("⚙️ 設定")
 
-    if st.sidebar.button("⚙️ ユーザー設定"):
-        st.session_state.page = "settings"
+    if not st.session_state.get("guest_mode"):
+        if st.sidebar.button("⚙️ ユーザー設定"):
+            st.session_state.page = "settings"
 
     if st.sidebar.button("⬅ チャットに戻る"):
         st.session_state.page = "chat"
@@ -121,11 +122,17 @@ def render_sidebar(
     st.sidebar.markdown("---")
 
     with st.sidebar.expander("👤 ログイン情報", expanded=True):
-        st.write(f"**{st.session_state.get('email', '')}**")
-
-        if st.button("🚪 ログアウト"):
-            logout()
-            st.rerun()
+        if st.session_state.get("guest_mode"):
+            st.write("**👥 ゲストユーザー**")
+            if st.button("📝 新規登録 / ログイン"):
+                for key in list(st.session_state.keys()):
+                    del st.session_state[key]
+                st.rerun()
+        else:
+            st.write(f"**{st.session_state.get('email', '')}**")
+            if st.button("🚪 ログアウト"):
+                logout()
+                st.rerun()
 
     # ============================
     # お問い合わせ

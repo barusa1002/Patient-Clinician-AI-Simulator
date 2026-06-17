@@ -30,7 +30,16 @@ supabase: Client = get_supabase()
 # =========================
 # 現在のログインユーザー取得
 # =========================
+class _GuestUser:
+    id = "guest"
+    email = "ゲスト"
+
+
 def get_current_user():
+    # ゲストモード
+    if st.session_state.get("guest_mode"):
+        return _GuestUser()
+
     # st.session_state に保存したトークンで検証する。
     # @st.cache_resource のシングルトンクライアントに依存しないことで
     # 複数ユーザー・複数デバイス間のセッション混入を防ぐ。

@@ -666,6 +666,9 @@ JSON以外の文章は絶対に出力しない。
 def save_evaluation(user_id, scenario, subscenario, chat_history, evaluation_text,
                     prescription_notes=None, soap_notes=None):
 
+    if user_id == "guest":
+        return  # ゲストモードはDB保存しない
+
     try:
         eval_data = {
             "chat_history": chat_history,
@@ -691,6 +694,9 @@ def save_evaluation(user_id, scenario, subscenario, chat_history, evaluation_tex
 # ==========================================================
 
 def load_user_evaluations(user_id):
+
+    if user_id == "guest":
+        return []
 
     res = supabase.table("evaluations") \
         .select("*") \

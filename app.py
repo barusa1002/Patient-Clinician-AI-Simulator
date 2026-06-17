@@ -151,7 +151,8 @@ def check_auto_logout(user_id: str):
             pass
 
 
-check_auto_logout(user.id)
+if not st.session_state.get("guest_mode"):
+    check_auto_logout(user.id)
 
 # ==========================================================
 # ブラウザ側の非活動タイマー
@@ -187,28 +188,32 @@ st.session_state.email = user.email
 # ==========================================================
 # 🔥 role & tutorial取得
 # ==========================================================
-profile = supabase.table("profiles") \
-    .select("*") \
-    .eq("id", user.id) \
-    .execute()
-
-if profile.data and len(profile.data) > 0:
-    row = profile.data[0]
-    st.session_state.role = row.get("role") or "student"
-    st.session_state.tutorial_done = row.get("tutorial_done") is True
-else:
-    # メール認証後の初回ログイン時にプロフィールを作成
-    try:
-        supabase.table("profiles").upsert({
-            "id": user.id,
-            "role": "student",
-            "tutorial_done": False,
-            "email": user.email
-        }).execute()
-    except Exception:
-        pass
+if st.session_state.get("guest_mode"):
     st.session_state.role = "student"
-    st.session_state.tutorial_done = False
+    st.session_state.tutorial_done = True  # ゲストはチュートリアルをスキップ
+else:
+    profile = supabase.table("profiles") \
+        .select("*") \
+        .eq("id", user.id) \
+        .execute()
+
+    if profile.data and len(profile.data) > 0:
+        row = profile.data[0]
+        st.session_state.role = row.get("role") or "student"
+        st.session_state.tutorial_done = row.get("tutorial_done") is True
+    else:
+        # メール認証後の初回ログイン時にプロフィールを作成
+        try:
+            supabase.table("profiles").upsert({
+                "id": user.id,
+                "role": "student",
+                "tutorial_done": False,
+                "email": user.email
+            }).execute()
+        except Exception:
+            pass
+        st.session_state.role = "student"
+        st.session_state.tutorial_done = False
 
 # ==========================================================
 # スマホ判定（タイトル表示前に実施）
@@ -222,6 +227,14 @@ if "is_mobile" not in st.session_state:
 # タイトル
 # ==========================================================
 st.title("患者・医療従事者役 AI シミュレーター")
+
+# ゲストモードバナー
+if st.session_state.get("guest_mode"):
+    st.info("👥 **ゲストモードで利用中** — 評価結果はこのセッション内のみ有効です。登録すると履歴が保存されます。")
+    if st.button("📝 新規登録してデータを保存する"):
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.rerun()
 
 # ==========================================================
 # 学習モード選択

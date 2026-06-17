@@ -197,6 +197,16 @@ if profile.data and len(profile.data) > 0:
     st.session_state.role = row.get("role") or "student"
     st.session_state.tutorial_done = row.get("tutorial_done") is True
 else:
+    # メール認証後の初回ログイン時にプロフィールを作成
+    try:
+        supabase.table("profiles").upsert({
+            "id": user.id,
+            "role": "student",
+            "tutorial_done": False,
+            "email": user.email
+        }).execute()
+    except Exception:
+        pass
     st.session_state.role = "student"
     st.session_state.tutorial_done = False
 

@@ -32,12 +32,17 @@ def create_user(email, password):
         if res.user:
             user_id = res.user.id
 
-            supabase.table("profiles").upsert({
-                "id": user_id,
-                "role": "student",
-                "tutorial_done": False,
-                "email": email
-            }).execute()
+            # メール認証有効時はセッションがないためRLSエラーになる場合があるが、
+            # ログイン時に別途作成するため失敗しても登録自体は成功とみなす
+            try:
+                supabase.table("profiles").upsert({
+                    "id": user_id,
+                    "role": "student",
+                    "tutorial_done": False,
+                    "email": email
+                }).execute()
+            except Exception as profile_e:
+                logger.warning(f"create_user profile upsert skipped: {profile_e}")
 
             return True
 
@@ -50,7 +55,7 @@ def create_user(email, password):
         if "User already registered" in error_msg:
             st.error("このメールアドレスは既に登録されています")
         else:
-            st.error("登録に失敗しました")
+            st.error(f"登録に失敗しました: {error_msg}")
 
         return False
 
@@ -239,7 +244,7 @@ def login_screen():
                     st.rerun()
 
                 else:
-                    st.error("メールアドレスまたはパスワードが違います")
+                    st.error("メールアドレスまたはパスワードが違います。メール認証が完了していない場合は確認メールをご確認ください。")
 
         with st.expander("パスワードをお忘れの方はこちら"):
             reset_email = st.text_input("登録済みのメールアドレス", key="reset_email")
@@ -297,9 +302,8 @@ def login_screen():
                 success = create_user(new_email, new_pass1)
 
                 if success:
-                    st.success("登録完了！ログインしてください")
-                else:
-                    st.error("登録に失敗しました（既に登録済みの可能性があります）")
+                    st.success("確認メールを送信しました。届いたメール内のリンクをクリックして認証を完了してください。")
+                # エラーメッセージは create_user 内で表示済みのため追加表示しない
 
     # ---------------------------
     # お知らせ

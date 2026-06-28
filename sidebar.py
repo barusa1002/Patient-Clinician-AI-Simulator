@@ -73,6 +73,43 @@ def render_sidebar(
         st.markdown(f"### 🕒 日時\n{current_datetime}")
 
     # ============================
+    # 前回の薬歴（継続処方シナリオのみ）
+    # ============================
+    prev_soap = selected["task_info"].get("前回の薬歴")
+    if prev_soap:
+        with st.sidebar.expander("📋 前回の薬歴", expanded=False):
+            st.caption(f"📅 実施日：{prev_soap.get('実施日', '')}")
+            st.markdown("---")
+            for key, label in [
+                ("S", "S（主観的情報 / 患者の訴え）"),
+                ("O", "O（客観的情報）"),
+                ("A", "A（アセスメント）"),
+                ("P", "P（計画・指導内容）"),
+            ]:
+                v = prev_soap.get(key, "")
+                if v:
+                    st.markdown(f"**{label}**")
+                    st.text(v)
+                    st.markdown("")
+
+    # ============================
+    # お薬手帳
+    # ============================
+    notebook = selected["task_info"].get("お薬手帳")
+    if notebook:
+        with st.sidebar.expander("📕 お薬手帳", expanded=False):
+            st.caption("患者のお薬手帳の記録です。")
+            for i, entry in enumerate(notebook):
+                if i > 0:
+                    st.markdown("---")
+                st.markdown(f"**{entry.get('日付', '')}**")
+                if entry.get("医療機関"):
+                    st.caption(f"🏥 {entry['医療機関']}")
+                if entry.get("薬局"):
+                    st.caption(f"💊 {entry['薬局']}")
+                st.text(entry.get("処方", ""))
+
+    # ============================
     # セッションリセット
     # ============================
     st.sidebar.markdown("---")

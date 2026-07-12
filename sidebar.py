@@ -1,6 +1,6 @@
 #sidebar.py
 import streamlit as st
-from utils import reset_session
+from utils import reset_session, replace_date_templates, make_prescription_html
 from db import logout
 
 
@@ -35,16 +35,12 @@ def render_sidebar(
 
     selected = SCENARIO_PROMPTS[mode][scenario][subscenario]
 
-    from datetime import datetime
-    today = datetime.now().strftime("%Y年%m月%d日")
-
     # 表示用（selectedは壊さない）
-    task_info_display = {}
-    for k, v in selected["task_info"].items():
-        if isinstance(v, str):
-            task_info_display[k] = v.replace("{{TODAY}}", today)
-        else:
-            task_info_display[k] = v
+    # {{TODAY}} だけでなく {{TODAY+3D}} 等の相対日付テンプレにも対応
+    task_info_display = {
+        k: replace_date_templates(v) if isinstance(v, str) else v
+        for k, v in selected["task_info"].items()
+    }
 
     # ============================
     # 課題詳細（折りたたみ）
@@ -61,7 +57,6 @@ def render_sidebar(
         st.text(task_info_display["医療従事者情報"])
 
         st.markdown("### 💊 処方内容")
-        from utils import make_prescription_html
         st.markdown(make_prescription_html(task_info_display["処方内容"]))
 
         refs = selected["task_info"].get("参考資料")

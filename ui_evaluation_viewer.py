@@ -5,7 +5,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import os
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+
+_JST = timezone(timedelta(hours=9))
 
 
 # ===============================
@@ -38,7 +40,7 @@ def normalize_evaluation(h):
     if isinstance(evaluation, str):
         try:
             evaluation = json.loads(evaluation)
-        except:
+        except (json.JSONDecodeError, TypeError):
             return None
 
     if not isinstance(evaluation, dict):
@@ -228,6 +230,7 @@ def render_radar_chart(histories, mode="平均", categories=None):
     ax.grid(alpha=0.3)
 
     st.pyplot(fig)
+    plt.close(fig)
 
 
 # ===============================
@@ -257,9 +260,12 @@ def render_evaluation_history(histories, show_detail=True):
 
         if raw_time:
             try:
-                dt = datetime.fromisoformat(raw_time.replace("Z", ""))
+                # Supabase の created_at は UTC。日本時間に変換して表示する
+                dt = datetime.fromisoformat(raw_time.replace("Z", "+00:00"))
+                if dt.tzinfo is not None:
+                    dt = dt.astimezone(_JST)
                 timestamp = dt.strftime("%Y-%m-%d %H:%M")
-            except:
+            except ValueError:
                 timestamp = raw_time
         else:
             timestamp = "日時不明"

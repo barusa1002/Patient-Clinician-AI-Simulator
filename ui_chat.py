@@ -2,7 +2,10 @@
 import streamlit as st
 import io
 import json
+import logging
 from db import get_current_user
+
+logger = logging.getLogger(__name__)
 
 from audio import speak_text, play_audio
 from evaluation import (
@@ -248,7 +251,8 @@ def render_chat_page(
             if not response or not response.strip():
                 response = "（応答が生成されませんでした）"
 
-        except Exception:
+        except Exception as e:
+            logger.error(f"chat send_message error: {e}")
             response = "（現在システムが混み合っています）"
 
         st.session_state.chat_history.append(("assistant", response))
@@ -276,7 +280,12 @@ def render_chat_page(
     else:
         hint_clicked = st.button("💡 ヒントを見る", disabled=not has_history, key="hint_btn")
     if hint_clicked:
-        checklist = EVALUATION_CHECKLISTS.get(scenario, {})
+        # 評価時と同じ優先順位（サブシナリオ別→シナリオ別）でチェックリストを取得
+        sub_key = f"{scenario}|{subscenario}"
+        checklist = (
+            EVALUATION_CHECKLISTS.get(sub_key)
+            or EVALUATION_CHECKLISTS.get(scenario, {})
+        )
         checklist_text = "\n".join(f"- {item}" for item in checklist)
 
         conversation = ""
@@ -372,12 +381,12 @@ def render_chat_page(
             raw_eval = eval_session.send_message(eval_prompt).text
 
             start = raw_eval.find("{")
-            end = raw_eval.rfind("}") + 1
+            end = raw_eval.rfind("}")
 
-            if start == -1 or end == -1:
+            if start == -1 or end == -1 or end < start:
                 raise ValueError("JSONが見つかりません")
 
-            json_text = raw_eval[start:end]
+            json_text = raw_eval[start:end + 1]
             evaluation_json = json.loads(json_text)
 
             # 模範解答生成時に不足項目を参照できるよう保存
@@ -401,7 +410,7 @@ def render_chat_page(
         # 点数計算（表示項目ベース）
         # =============================
 
-        scores = evaluation_json["scores"]
+        scores = evaluation_json.get("scores", {})
 
         achieved = sum(1 for v in scores.values() if v == 1)
         missing = sum(1 for v in scores.values() if v == 0)
@@ -473,8 +482,11 @@ def render_chat_page(
 
         if missing_items:
             for m in missing_items:
-                st.markdown(f"**{m['item']}**")
-                st.markdown(f"- 理由：{m['reason']}")
+                if isinstance(m, dict):
+                    st.markdown(f"**{m.get('item', '不明')}**")
+                    st.markdown(f"- 理由：{m.get('reason', '')}")
+                else:
+                    st.markdown(f"**{m}**")
                 st.markdown("")
         else:
             st.markdown("（該当なし）")
@@ -556,7 +568,8 @@ def render_chat_page(
                     evaluation_json=eval_json,
                     learning_mode=st.session_state.get("learning_mode", "スタンダードモード"),
                 )
-                now_label = __import__("datetime").datetime.now().strftime("%Y%m%d_%H%M")
+                from datetime import datetime as _dt
+                now_label = _dt.now().strftime("%Y%m%d_%H%M")
                 filename = f"評価レポート_{scenario}_{now_label}.pdf"
                 st.download_button(
                     label="📄 評価レポートをPDFで保存",
@@ -584,7 +597,9 @@ def render_chat_page(
             # 不足項目テキスト
             if missing_items:
                 missing_text = "\n".join(
-                    f"- {m['item']}：{m['reason']}" for m in missing_items
+                    f"- {m.get('item', '')}：{m.get('reason', '')}"
+                    if isinstance(m, dict) else f"- {m}"
+                    for m in missing_items
                 )
             else:
                 missing_text = "（不足項目なし）"

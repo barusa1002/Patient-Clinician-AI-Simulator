@@ -20,8 +20,9 @@ def get_supabase() -> Client:
 
     except Exception as e:
         logger.error(f"get_supabase error: {e}")
-        st.error(f"Supabase接続エラー: {e}")
-        return None
+        # 詳細（URL等）を画面に出さないよう、例外メッセージは表示しない
+        st.error("データベースへの接続に失敗しました。管理者にお問い合わせください。")
+        st.stop()
 
 
 supabase: Client = get_supabase()

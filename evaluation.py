@@ -1,11 +1,8 @@
 #evaluation.py
-import os
-import json
+import logging
 from db import supabase
-from datetime import datetime
 
-EVAL_FILE = "data/evaluations.json"
-os.makedirs("data", exist_ok=True)
+logger = logging.getLogger(__name__)
 
 # ==========================================================
 # 評価チェックリスト（シナリオ別）
@@ -151,7 +148,9 @@ EVALUATION_CHECKLISTS = {
     "終了挨拶": None,
 },
 
-"一般用医薬品の情報提供": {
+# 注意：キー名は prompts.py の SCENARIOS の表記（「一般医薬品の情報提供」）と
+# 一致させること。不一致だと評価時にチェックリストが空になる。
+"一般医薬品の情報提供": {
     "来局者呼び入れ": None,
     "自己紹介": None,
     "説明目的説明": None,
@@ -687,7 +686,7 @@ def save_evaluation(user_id, scenario, subscenario, chat_history, evaluation_tex
         }).execute()
 
     except Exception as e:
-        print(f"保存エラー: {e}")
+        logger.error(f"save_evaluation error: {e}")
 
 # ==========================================================
 # 個人評価取得
@@ -698,42 +697,14 @@ def load_user_evaluations(user_id):
     if user_id == "guest":
         return []
 
-    res = supabase.table("evaluations") \
-        .select("*") \
-        .eq("user_id", user_id) \
-        .order("created_at", desc=True) \
-        .execute()
-
-    return res.data
-
-
-# ==========================================================
-# 全学生評価取得（教員用）
-# ==========================================================
-def load_all_students_evaluations():
-
-    res = supabase.table("evaluations") \
-        .select("*") \
-        .order("created_at", desc=True) \
-        .execute()
-
-    result = {}
-
-    for row in res.data:
-        uid = row["user_id"]
-
-        if uid not in result:
-            result[uid] = []
-
-        eval_data = row.get("evaluation", {})
-
-        result[uid].append({
-            "timestamp": row["created_at"],
-            "scenario": row.get("scenario"),
-            "subscenario": row.get("subscenario"),
-            "chat_history": eval_data.get("chat_history"),
-            "evaluation": eval_data.get("result")
-        })
-
-    return result
+    try:
+        res = supabase.table("evaluations") \
+            .select("*") \
+            .eq("user_id", user_id) \
+            .order("created_at", desc=True) \
+            .execute()
+        return res.data or []
+    except Exception as e:
+        logger.error(f"load_user_evaluations error: {e}")
+        return []
 

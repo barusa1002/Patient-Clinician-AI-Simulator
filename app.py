@@ -19,7 +19,7 @@ def load_css():
     try:
         with open("components/highlight.css", encoding="utf-8") as f:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-    except:
+    except OSError:
         pass
 
 load_css()
@@ -218,7 +218,7 @@ else:
 # ==========================================================
 # スマホ判定（タイトル表示前に実施）
 # ==========================================================
-from utils import strip_thought, reset_session, detect_mobile
+from utils import detect_mobile
 
 if "is_mobile" not in st.session_state:
     st.session_state.is_mobile = detect_mobile()
@@ -326,42 +326,22 @@ mode, scenario, subscenario, selected = render_sidebar(
 )
 
 # ==========================================================
-# 日付テンプレ置換
-# ==========================================================
-import re
-
-def replace_date_templates(text):
-
-    today = datetime.now()
-    pattern = r"\{\{TODAY([+-]\d+)?([DY])?\}\}"
-
-    def repl(match):
-        number = match.group(1)
-        unit = match.group(2)
-        date = today
-
-        if number and unit:
-            value = int(number)
-            if unit == "D":
-                date = today + timedelta(days=value)
-            elif unit == "Y":
-                date = today + timedelta(days=365 * value)
-
-        return date.strftime("%Y年%m月%d日")
-
-    return re.sub(pattern, repl, text)
-
-# ==========================================================
 # チャット初期化
 # ==========================================================
+from utils import replace_date_templates
+
 def init_chat_session(mode, selected):
 
-    for k, v in selected["task_info"].items():
-        if isinstance(v, str):
-            selected["task_info"][k] = replace_date_templates(v)
+    # 注意：selected はモジュールレベルの SCENARIO_PROMPTS を参照しているため、
+    # 直接書き換えると全セッション・全ユーザーで日付が固定されてしまう。
+    # 必ずローカルコピーに対して置換を行うこと。
+    task_info = {
+        k: replace_date_templates(v) if isinstance(v, str) else v
+        for k, v in selected["task_info"].items()
+    }
 
     task_text = "\n".join(
-        f"【{k}】\n{v}" for k, v in selected["task_info"].items()
+        f"【{k}】\n{v}" for k, v in task_info.items()
     )
 
     _no_thinking = (

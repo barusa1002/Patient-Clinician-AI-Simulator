@@ -5,6 +5,34 @@
 import re
 import urllib.parse
 import streamlit as st
+from datetime import datetime, timedelta
+
+
+# ==========================================================
+# 日付テンプレート置換
+# {{TODAY}} / {{TODAY+3D}} / {{TODAY-1Y}} などを実際の日付に変換する
+# ==========================================================
+_DATE_TEMPLATE_RE = re.compile(r"\{\{TODAY([+-]\d+)?([DY])?\}\}")
+
+
+def replace_date_templates(text: str) -> str:
+    today = datetime.now()
+
+    def repl(match):
+        number = match.group(1)
+        unit = match.group(2)
+        date = today
+
+        if number and unit:
+            value = int(number)
+            if unit == "D":
+                date = today + timedelta(days=value)
+            elif unit == "Y":
+                date = today + timedelta(days=365 * value)
+
+        return date.strftime("%Y年%m月%d日")
+
+    return _DATE_TEMPLATE_RE.sub(repl, text)
 
 # Gemini 2.5が思考プロセスを出力するときに現れるキーワード一覧
 # （患者の実際のセリフには絶対に現れない語句のみ登録する）

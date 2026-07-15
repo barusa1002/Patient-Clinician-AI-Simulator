@@ -60,6 +60,25 @@ _THINKING_INDICATORS = [
 # ==========================================================
 # フィルタ関数
 # ==========================================================
+# 先頭ラベルのパターン：
+# ・英字ラベル（RESPONSE: / PRESENTER: / SPEAKER: など任意の英単語＋コロン）
+#   → Geminiが毎回違うラベルを付けてくるためブラックリストではなく汎用マッチ
+# ・日本語ラベル（回答: / 発言: など）は既知のものだけ対象
+_LEADING_LABEL = re.compile(
+    r"^(?:[A-Za-z][A-Za-z0-9 _\-]{0,24}|回答|発言|セリフ|患者|返答|応答|出力)[:：]\s*"
+)
+
+
+def _strip_leading_label(text: str) -> str:
+    """先頭の「ラベル＋コロン」を（多重に付いていても）すべて剥がす"""
+    text = text.strip()
+    while True:
+        new_text = _LEADING_LABEL.sub("", text, count=1).strip()
+        if new_text == text:
+            return text
+        text = new_text
+
+
 def strip_thought(text: str) -> str:
     """
     LLM出力から思考部分を削除し、患者の発話だけを返す
@@ -72,10 +91,8 @@ def strip_thought(text: str) -> str:
     text = re.sub(r"THOUGHT.*?回答[:：]", "", text, flags=re.DOTALL)
     text = re.sub(r"THOUGHT.*", "", text)
 
-    # 先頭のラベル削除（Response: / 回答: / 発言: など）
-    # 先頭に空白・改行が入った状態で返ってくることがあるため、まずstripしてから判定する
-    text = text.strip()
-    text = re.sub(r"^(Response|回答|発言|セリフ|患者|返答)[:：]\s*", "", text, flags=re.IGNORECASE)
+    # 先頭のラベル削除（RESPONSE: / PRESENTER: / 回答: など）
+    text = _strip_leading_label(text)
 
     # 発話ラベルがある場合はそこだけ残す
     if "発話：" in text:
@@ -86,6 +103,10 @@ def strip_thought(text: str) -> str:
     paragraphs = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
     if len(paragraphs) > 1:
         text = paragraphs[-1]
+
+    # 段落選択後に残ったラベルも剥がす
+    # （思考段落の後ろにラベル付きセリフが来るパターン対策）
+    text = _strip_leading_label(text)
 
     # Gemini 2.5の暗黙的思考対応（2）：
     # 思考キーワードが含まれる場合、「。」で分割して最後の文だけを返す

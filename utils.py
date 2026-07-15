@@ -73,6 +73,8 @@ def strip_thought(text: str) -> str:
     text = re.sub(r"THOUGHT.*", "", text)
 
     # 先頭のラベル削除（Response: / 回答: / 発言: など）
+    # 先頭に空白・改行が入った状態で返ってくることがあるため、まずstripしてから判定する
+    text = text.strip()
     text = re.sub(r"^(Response|回答|発言|セリフ|患者|返答)[:：]\s*", "", text, flags=re.IGNORECASE)
 
     # 発話ラベルがある場合はそこだけ残す

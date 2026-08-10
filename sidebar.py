@@ -134,6 +134,11 @@ def render_sidebar(
         if st.sidebar.button("⚙️ ユーザー設定"):
             st.session_state.page = "settings"
 
+    if st.sidebar.button("❓ チュートリアルをもう一度見る"):
+        st.session_state.tutorial_step = 0
+        st.session_state.show_tutorial = True
+        st.rerun()
+
     if st.sidebar.button("⬅ チャットに戻る"):
         st.session_state.page = "chat"
 

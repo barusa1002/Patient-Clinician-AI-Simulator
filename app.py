@@ -247,7 +247,8 @@ if (
     not st.session_state.get("tutorial_done", False)
     or st.session_state.get("show_tutorial", False)
 ):
-    run_tutorial()
+    if run_tutorial():
+        st.stop()
 
 # ==========================================================
 # ページ管理

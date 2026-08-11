@@ -1,6 +1,6 @@
 #sidebar.py
 import streamlit as st
-from utils import reset_session, replace_date_templates, make_prescription_html
+from utils import reset_session, replace_date_templates, make_prescription_leaflet
 from db import logout
 
 
@@ -57,7 +57,10 @@ def render_sidebar(
         st.text(task_info_display["医療従事者情報"])
 
         st.markdown("### 💊 処方内容")
-        st.markdown(make_prescription_html(task_info_display["処方内容"]))
+        st.markdown(
+            make_prescription_leaflet(task_info_display["処方内容"]),
+            unsafe_allow_html=True,
+        )
 
         refs = selected["task_info"].get("参考資料")
         if refs:

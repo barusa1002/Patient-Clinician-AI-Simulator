@@ -273,6 +273,119 @@ h1 {
     line-height: 1.6 !important;
 }
 
+/* ==================================
+   処方内容：薬剤情報提供文書スタイル
+================================== */
+.rx-doc {
+    font-size: 0.82rem;
+    line-height: 1.55;
+}
+
+/* 前置き（「（入院前服薬）」など） */
+.rx-doc .rx-pre {
+    font-size: 0.78rem;
+    opacity: 0.75;
+    margin-bottom: 6px;
+}
+
+/* 薬剤1剤ぶんのカード */
+.rx-doc .rx-card {
+    border: 1px solid rgba(128, 128, 128, 0.28);
+    border-left: 3px solid #7c3aed;
+    border-radius: 10px;
+    padding: 8px 10px 6px;
+    margin-bottom: 8px;
+    background: rgba(128, 128, 128, 0.06);
+}
+
+.rx-doc .rx-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+.rx-doc .rx-name {
+    font-weight: 700;
+    font-size: 0.92rem;
+    text-decoration: none;
+    border-bottom: 1px dotted currentColor;
+}
+.rx-doc .rx-name:hover {
+    opacity: 0.75;
+}
+
+/* 処方区分バッジ */
+.rx-doc .rx-badge {
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 999px;
+    white-space: nowrap;
+    color: #fff;
+    letter-spacing: 0.02em;
+}
+.rx-doc .b-new  { background: #2563eb; }
+.rx-doc .b-add  { background: #059669; }
+.rx-doc .b-cont { background: rgba(128, 128, 128, 0.55); }
+.rx-doc .b-up   { background: #d97706; }
+.rx-doc .b-down { background: #0891b2; }
+.rx-doc .b-stop { background: #dc2626; }
+
+/* 「※5mgから減量」などの注記 */
+.rx-doc .rx-remark {
+    font-size: 0.72rem;
+    opacity: 0.7;
+    margin: -2px 0 4px;
+}
+
+/* 項目行（用法・用量／この薬の働き／注意すること） */
+.rx-doc .rx-item {
+    display: flex;
+    gap: 7px;
+    padding: 4px 0;
+    border-top: 1px dashed rgba(128, 128, 128, 0.3);
+}
+.rx-doc .rx-k {
+    flex: 0 0 5.6em;
+    font-size: 0.66rem;
+    opacity: 0.62;
+    padding-top: 2px;
+    white-space: nowrap;
+}
+.rx-doc .rx-v {
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+}
+.rx-doc .rx-caution .rx-v {
+    color: #f87171;
+}
+
+/* 全体の補足（■ 見出しや目標値など） */
+.rx-doc .rx-notes {
+    border: 1px dashed rgba(128, 128, 128, 0.38);
+    border-radius: 8px;
+    padding: 7px 9px;
+    font-size: 0.75rem;
+    line-height: 1.65;
+    opacity: 0.92;
+}
+.rx-doc .rx-notes-head {
+    font-weight: 700;
+    margin-top: 5px;
+}
+.rx-doc .rx-notes-head:first-child {
+    margin-top: 0;
+}
+
+/* 解析できなかった場合のフォールバック */
+.rx-doc .rx-plain {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 /* ----------------------------------
    テキスト入力フィールド
 ---------------------------------- */

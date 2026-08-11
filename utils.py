@@ -3,6 +3,7 @@
 
 
 import re
+import html as _html
 import urllib.parse
 import streamlit as st
 from datetime import datetime, timedelta
@@ -143,7 +144,8 @@ def detect_mobile() -> bool:
 # 処方内容HTML生成（薬品名にPMDA添付文書リンクを付与）
 # ==========================================================
 _DRUG_UNITS_RE = re.compile(
-    r'(錠|カプセル|カプセル剤|散|液|テープ|パッチ|OD|DS|エアー|坐剤|吸入|mg|μg|mL|mcg)'
+    r'(錠|カプセル|カプセル剤|散|液|テープ|パッチ|OD|DS|エアー|坐剤|吸入'
+    r'|点滴静注|静注|点滴|注射|バイアル|mg|μg|mL|mcg)'
 )
 _SKIP_PREFIXES = (
     "用法", "用量", "日数", "副作用", "効果", "残薬",
@@ -165,7 +167,7 @@ _DRUG_URL_MAP = {
     "アセトアミノフェン": _pack("1141007F1195_1_13"),  # 後発「マルイシ」
     "アスピリン":        _pack("3399007H1137_1_08"),   # 後発「ZE」腸溶錠
     # ── 循環器 ──
-    "アムロジピン":      _pack("2171022F1282_1_21"),   # 後発「サワイ」
+    "アムロジピン":      _pack("2171022F1282_1_22"),   # 後発「サワイ」
     "カンデサルタン":    _pack("2149040F1093_1_11"),   # 後発「JG」
     "バルサルタン":      _pack("2149041F1292_1_08"),   # 後発「日新」
     "エナラプリル":      _pack("2144002F1210_1_14"),   # 後発「JG」
@@ -180,7 +182,8 @@ _DRUG_URL_MAP = {
     "エリキュース":      _pack("3339004F1029_1_22"),
     "クロピドグレル":    _pack("3399008F1203_1_12"),   # 後発「サワイ」
     # ── 消化器 ──
-    "ランソプラゾール":  _pack("2329023F1101_1_16"),   # 後発「サワイ」
+    # ランソプラゾール：旧品目コード(2329023F1101)は失効し添付文書が参照不可のため、
+    # 直接リンクは持たせずPMDA医薬品検索へフォールバックさせる
     "トラネキサム酸":    _pack("3327002F1169_1_07"),   # 後発「YD」
     "酸化マグネシウム":  _pack("2344009F1086_1_10"),   # 後発「ケンエー」
     # ── 糖尿病・代謝 ──
@@ -272,6 +275,303 @@ def make_prescription_html(prescription_text: str) -> str:
             lines_md.append(line)
 
     return '  \n'.join(lines_md)
+
+
+# ==========================================================
+# 処方内容を「薬剤情報提供文書」風のカードHTMLに変換
+#   ・薬剤ごとにカード化し、用法用量／働き／注意 を項目立てで表示
+#   ・薬品名は従来どおりPMDA添付文書へのリンクを保持
+# ==========================================================
+
+def _pmda_url_for(name: str) -> str:
+    for key, url in _DRUG_URL_MAP.items():
+        if key in name:
+            return url
+    return (
+        "https://www.pmda.go.jp/PmdaSearch/iyakuSearch/"
+        f"?name={urllib.parse.quote(name)}"
+    )
+
+
+# 処方区分バッジ（（新規）（減量）など行頭の括弧書き）。表示名は原文どおりとする。
+_BADGE_STYLES = {
+    "新規追加": "b-add",
+    "新規":     "b-new",
+    "追加":     "b-add",
+    "継続":     "b-cont",
+    "増量":     "b-up",
+    "減量":     "b-down",
+    "中止":     "b-stop",
+    "変更":     "b-new",
+    "推奨薬":   "b-add",
+}
+_BADGE_RE = re.compile(r'^[（(]\s*(' + "|".join(_BADGE_STYLES) + r')\s*[)）]\s*')
+
+# 薬品名行に混在した用法用量を切り出すための目印
+_INLINE_DOSE_RE = re.compile(r'(1日\d+回|1回\d|\d+日分|発作時|頓用|症状がある時)')
+
+# 用法用量とみなす行
+_DOSE_HEAD_RE = re.compile(r'^(1日|1回|\d+日分|発作時|頓用|毎食|就寝前|起床時|症状)')
+_DOSE_WORD_RE = re.compile(r'(食後|食前|食間|就寝前|貼付|吸入|皮下注射|日分)')
+
+# 全体の補足へ回すラベル
+_GLOBAL_LABELS = ("降圧目標", "管理目標", "血糖管理目標", "目標", "重要", "変更理由", "減量理由")
+
+_LABEL_RE = re.compile(r'^([^：:]{1,14})[：:]\s*(.*)$')
+
+
+def _new_drug(badge, name, remark="", dose=None):
+    return {"badge": badge, "name": name, "remark": remark,
+            "dose": list(dose or []), "effect": [], "side": [],
+            "caution": [], "extra": [], "free": []}
+
+
+def _classify_line(drug: dict, line: str) -> None:
+    """薬剤カード内の1行を、用法・働き・副作用・注意に振り分ける"""
+    m = _LABEL_RE.match(line)
+    label, value = (m.group(1), m.group(2)) if m else (None, None)
+
+    if label in ("効果", "作用", "働き"):
+        drug["effect"].append(value)
+        return
+    if label in ("主な副作用", "副作用", "重大な副作用", "副作用例", "注意すべき副作用"):
+        drug["side"].append(value)
+        return
+    if label in ("注意", "使用後", "使用上の注意"):
+        drug["caution"].append(value)
+        return
+    if label in ("用法", "用量", "用法用量", "用法・用量", "使用方法"):
+        drug["dose"].append(value)
+        return
+    if label:
+        drug["extra"].append((label, value))
+        return
+
+    # ラベルなし行：用法用量らしければ用法へ、それ以外は補足へ
+    if _DOSE_HEAD_RE.match(line) or _DOSE_WORD_RE.search(line):
+        drug["dose"].append(line)
+    else:
+        drug["free"].append(line)
+
+
+# 複数薬剤にまたがる説明を全体備考へ移すときのラベル
+_MOVE_LABELS = {"effect": "効果", "side": "主な副作用", "caution": "注意"}
+
+
+def _move_shared_notes(drugs, notes):
+    """複数の薬剤名を含む説明文は、特定の1剤ではなく処方全体の補足として扱う"""
+    # 説明文中では「アムロジピン錠」ではなく「アムロジピン」と書かれるため、
+    # 剤形（錠・カプセル等）を取り除いた成分名で照合する
+    bases = []
+    for d in drugs:
+        m = re.match(
+            r'^([^\d\s（(]+?)(錠|カプセル|散|液|テープ|パッチ|坐剤|吸入|'
+            r'点滴|注射|静注|OD|DS)',
+            d["name"],
+        )
+        base = m.group(1) if m else re.split(r'[\d\s（(]', d["name"])[0]
+        if len(base) >= 3:
+            bases.append(base)
+
+    moved = []
+    for d in drugs:
+        for key, label in _MOVE_LABELS.items():
+            keep = []
+            for text in d[key]:
+                if sum(1 for b in bases if b in text) >= 2:
+                    moved.append(f"{label}：{text}")
+                else:
+                    keep.append(text)
+            d[key] = keep
+    # 備考の先頭側（■見出しより前）に差し込む
+    for i, text in enumerate(moved):
+        notes.insert(i, ("body", text))
+
+
+def parse_prescription(text: str):
+    """処方テキストを (前置き, 薬剤リスト, 全体補足) に構造化する"""
+    preamble, drugs, notes = [], [], []
+    cur = None
+    in_notes = False
+    last_target = "preamble"   # 直前の行をどこへ入れたか（字下げ継続行の行き先）
+
+    for raw in text.split("\n"):
+        line = raw.strip("　 \t")
+        if not line:
+            continue
+
+        # 「■ 見出し」以降はすべて全体補足として扱う
+        if line.startswith("■"):
+            in_notes = True
+            last_target = "notes"
+            notes.append(("head", line.lstrip("■ 　").strip()))
+            continue
+        if in_notes:
+            notes.append(("body", line))
+            continue
+
+        # 目標値・注記は薬剤ではなく全体補足へ
+        if line.startswith("※") or any(line.startswith(g) for g in _GLOBAL_LABELS):
+            notes.append(("body", line))
+            last_target = "notes"
+            continue
+
+        # 字下げされた行は直前ブロックの続きとして扱う
+        # （「※…」の折り返しなどが薬剤として誤認識されるのを防ぐ）
+        if raw[:1] in ("　", " ", "\t"):
+            if last_target == "notes":
+                notes.append(("body", line))
+            elif cur is not None:
+                _classify_line(cur, line)
+            else:
+                preamble.append(line)
+            continue
+
+        # 「推奨薬：〇〇」は1剤として扱う
+        if line.startswith("推奨薬："):
+            cur = _new_drug(("推奨薬", "b-add"), line[4:].strip())
+            drugs.append(cur)
+            last_target = "drug"
+            continue
+
+        # 薬品名行かどうか
+        body = _BADGE_RE.sub("", line)
+        bm = _BADGE_RE.match(line)
+        is_drug = (
+            _DRUG_UNITS_RE.search(body)
+            and not any(body.startswith(s) for s in _SKIP_PREFIXES)
+            # 「（＝1日2吸入…）」のような括弧書きの補足は薬剤とみなさない
+            and not (line[:1] in ("（", "(") and bm is None)
+        )
+
+        if is_drug:
+            # 行末の「※〜」を注記として分離
+            remark = ""
+            if "※" in body:
+                body, _, remark = body.partition("※")
+                body, remark = body.strip(), remark.strip()
+
+            # 同一行に用法が続く場合は分離（例：〇〇錠 500mg 1日2回 朝夕食後）
+            dose_inline = ""
+            dm = _INLINE_DOSE_RE.search(body)
+            if dm and dm.start() > 0:
+                dose_inline = body[dm.start():].strip()
+                body = body[: dm.start()].strip()
+
+            badge = (bm.group(1), _BADGE_STYLES[bm.group(1)]) if bm else None
+            cur = _new_drug(badge, body, remark,
+                            [dose_inline] if dose_inline else [])
+            drugs.append(cur)
+            last_target = "drug"
+            continue
+
+        if cur is None:
+            preamble.append(line)
+            last_target = "preamble"
+        else:
+            _classify_line(cur, line)
+            last_target = "drug"
+
+    _move_shared_notes(drugs, notes)
+    return preamble, drugs, notes
+
+
+def _row(label: str, value: str, cls: str = "") -> str:
+    return (
+        f'<div class="rx-item {cls}">'
+        f'<div class="rx-k">{_html.escape(label)}</div>'
+        f'<div class="rx-v">{value}</div></div>'
+    )
+
+
+def make_prescription_leaflet(prescription_text: str) -> str:
+    """処方内容を薬剤情報提供文書風のHTMLにして返す"""
+    preamble, drugs, notes = parse_prescription(prescription_text)
+
+    # 薬剤が1つも抽出できない場合は素のテキストとして表示（安全側）。
+    # ただし既知の薬品名が含まれていれば添付文書リンクだけは維持する。
+    if not drugs:
+        lines_html = []
+        for raw in prescription_text.split("\n"):
+            esc = _html.escape(raw)
+            hit = max(
+                (k for k in _DRUG_URL_MAP if k in raw),
+                key=len,
+                default=None,
+            )
+            if hit:
+                esc = esc.replace(
+                    _html.escape(hit),
+                    f'<a class="rx-name" href="{_html.escape(_DRUG_URL_MAP[hit])}" '
+                    f'target="_blank" rel="noopener">{_html.escape(hit)}</a>',
+                    1,
+                )
+            lines_html.append(esc)
+        return (
+            '<div class="rx-doc"><div class="rx-plain">'
+            + "<br>".join(lines_html)
+            + "</div></div>"
+        )
+
+    parts = ['<div class="rx-doc">']
+
+    if preamble:
+        parts.append(
+            '<div class="rx-pre">' +
+            "<br>".join(_html.escape(p) for p in preamble) +
+            "</div>"
+        )
+
+    for d in drugs:
+        parts.append('<div class="rx-card">')
+
+        # ── 見出し（バッジ＋薬品名リンク）──
+        head = ['<div class="rx-head">']
+        if d["badge"]:
+            text, cls = d["badge"]
+            head.append(f'<span class="rx-badge {cls}">{text}</span>')
+        name = d["name"]
+        # 添付文書検索用に、規格を除いた薬品名を取り出す
+        nm = re.match(r'^([^\d]+?)[\s]*[\d.]', name)
+        lookup = nm.group(1).strip() if nm else name
+        head.append(
+            f'<a class="rx-name" href="{_html.escape(_pmda_url_for(lookup))}" '
+            f'target="_blank" rel="noopener">{_html.escape(name)}</a>'
+        )
+        head.append("</div>")
+        parts.append("".join(head))
+
+        if d["remark"]:
+            parts.append(f'<div class="rx-remark">※{_html.escape(d["remark"])}</div>')
+
+        join = lambda xs: "<br>".join(_html.escape(x) for x in xs)
+
+        if d["dose"]:
+            parts.append(_row("用法・用量", join(d["dose"])))
+        if d["effect"]:
+            parts.append(_row("この薬の働き", join(d["effect"])))
+        for label, value in d["extra"]:
+            parts.append(_row(label, _html.escape(value)))
+        if d["side"]:
+            parts.append(_row("主な副作用", join(d["side"]), cls="rx-caution"))
+        if d["caution"]:
+            parts.append(_row("注意", join(d["caution"]), cls="rx-caution"))
+        if d["free"]:
+            parts.append(_row("", join(d["free"])))
+
+        parts.append("</div>")
+
+    if notes:
+        parts.append('<div class="rx-notes">')
+        for kind, text in notes:
+            if kind == "head":
+                parts.append(f'<div class="rx-notes-head">{_html.escape(text)}</div>')
+            else:
+                parts.append(f'<div>{_html.escape(text)}</div>')
+        parts.append("</div>")
+
+    parts.append("</div>")
+    return "".join(parts)
 
 
 # ==========================================================

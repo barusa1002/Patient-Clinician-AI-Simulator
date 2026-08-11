@@ -262,6 +262,18 @@ h1 {
 }
 
 /* ----------------------------------
+   サイドバーの st.text（前回の薬歴・お薬手帳）
+   既定では white-space: pre のため長文が1行になり
+   横スクロールしないと読めない。折り返して表示する。
+---------------------------------- */
+[data-testid="stSidebar"] [data-testid="stText"] > div {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    overflow-x: hidden !important;
+    line-height: 1.6 !important;
+}
+
+/* ----------------------------------
    テキスト入力フィールド
 ---------------------------------- */
 [data-testid="textInput"] input,

@@ -239,18 +239,6 @@ if "learning_mode" not in st.session_state:
     st.stop()
 
 # ==========================================================
-# チュートリアル（モード選択後に表示）
-# ==========================================================
-from tutorial import run_tutorial
-
-if (
-    not st.session_state.get("tutorial_done", False)
-    or st.session_state.get("show_tutorial", False)
-):
-    if run_tutorial():
-        st.stop()
-
-# ==========================================================
 # ページ管理
 # ==========================================================
 if "page" not in st.session_state:
@@ -325,6 +313,21 @@ mode, scenario, subscenario, selected = render_sidebar(
     SCENARIO_PROMPTS,
     current_datetime
 )
+
+# ==========================================================
+# チュートリアル
+# ==========================================================
+# サイドバーを描画したあとに表示する。チュートリアルは
+# サイドバーを実際に操作しながら進める内容のため、
+# ここより前で止めるとサイドバーが無い状態になってしまう。
+from tutorial import run_tutorial
+
+if (
+    not st.session_state.get("tutorial_done", False)
+    or st.session_state.get("show_tutorial", False)
+):
+    if run_tutorial():
+        st.stop()
 
 # ==========================================================
 # チャット初期化

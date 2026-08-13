@@ -504,11 +504,18 @@ def parse_prescription(text: str):
     return blocks, drugs, notes
 
 
-def _row(label: str, value: str, cls: str = "") -> str:
+def _row(label: str, value: str, cls: str = "", open_: bool = False) -> str:
+    """項目名をクリックすると内容が開く折りたたみ行を返す。
+
+    項目名は内容の上に置く（横並びにすると狭いサイドバーで
+    内容の幅が潰れて読みにくくなるため）。
+    """
+    if not label:
+        return f'<div class="rx-item {cls}"><div class="rx-v">{value}</div></div>'
     return (
-        f'<div class="rx-item {cls}">'
-        f'<div class="rx-k">{_html.escape(label)}</div>'
-        f'<div class="rx-v">{value}</div></div>'
+        f'<details class="rx-item {cls}"{" open" if open_ else ""}>'
+        f'<summary class="rx-k">{_html.escape(label)}</summary>'
+        f'<div class="rx-v">{value}</div></details>'
     )
 
 
@@ -579,16 +586,20 @@ def make_prescription_leaflet(prescription_text: str) -> str:
         # くすりのしおりの記載内容（該当薬剤のみ）
         info = drug_info.lookup(name)
 
-        # ① この薬の作用と効果（しおりを優先し、無ければシナリオ側の記載）
+        # ① 用法・用量
+        # ここだけは必ず処方箋どおりの内容を出す。しおりの一般的な用法
+        # （「通常、成人は1日1回…」）ではなく、この患者に出ている用法を
+        # 見せる必要があるため、drug_info は参照しない。
+        # 最も重要な項目なので、この行だけ最初から開いておく。
+        if d["dose"]:
+            parts.append(_row("用法・用量", join(d["dose"]), open_=True))
+
+        # ② この薬の作用と効果（しおりを優先し、無ければシナリオ側の記載）
         effect = info["作用と効果"] if info else None
         if effect:
             parts.append(_row("この薬の作用と効果", _html.escape(effect)))
         elif d["effect"]:
             parts.append(_row("この薬の作用と効果", join(d["effect"])))
-
-        # ② 用法・用量（処方ごとに異なるため常にシナリオ側）
-        if d["dose"]:
-            parts.append(_row("用法・用量", join(d["dose"])))
 
         for label, value in d["extra"]:
             parts.append(_row(label, _html.escape(value)))

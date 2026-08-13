@@ -354,23 +354,46 @@ h1 {
     margin: -2px 0 4px;
 }
 
-/* 項目行（用法・用量／この薬の働き／注意すること） */
+/* 項目（用法・用量／この薬の作用と効果／注意事項／主な副作用）
+   項目名をクリックすると内容が開く。項目名は内容の上に置く。 */
 .rx-doc .rx-item {
-    display: flex;
-    gap: 7px;
-    padding: 4px 0;
+    padding: 3px 0;
     border-top: 1px dashed rgba(128, 128, 128, 0.3);
 }
+
+/* 項目名（クリックで開閉するボタン） */
 .rx-doc .rx-k {
-    flex: 0 0 5.6em;
-    font-size: 0.66rem;
-    opacity: 0.62;
-    padding-top: 2px;
-    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    opacity: 0.7;
+    padding: 3px 2px;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
 }
+/* ブラウザ既定の三角マーカーを消して、自前の▸▾に置き換える */
+.rx-doc .rx-k::-webkit-details-marker {
+    display: none;
+}
+.rx-doc .rx-k::before {
+    content: "▸";
+    font-size: 0.6rem;
+    opacity: 0.75;
+}
+.rx-doc details[open] > .rx-k::before {
+    content: "▾";
+}
+.rx-doc .rx-k:hover {
+    opacity: 1;
+    background: rgba(124, 58, 237, 0.14);
+}
+
 .rx-doc .rx-v {
-    flex: 1;
-    min-width: 0;
+    padding: 2px 2px 5px 1.05em;
     word-break: break-word;
 }
 .rx-doc .rx-caution .rx-v {

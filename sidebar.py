@@ -1,6 +1,7 @@
 #sidebar.py
 import streamlit as st
 from utils import reset_session, replace_date_templates, make_prescription_leaflet
+from config import version_label
 from db import logout
 
 
@@ -204,6 +205,6 @@ def render_sidebar(
 開発：高嶋 貫多
 """)
 
-    st.sidebar.caption("Version 1.0")
+    st.sidebar.caption(version_label())
 
     return mode, scenario, subscenario, selected

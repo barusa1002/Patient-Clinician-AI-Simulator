@@ -56,21 +56,31 @@ def _render_prescription_form():
             f"- **照会先（医師名）**：{notes.get('doctor_name', '（未記載）')}\n"
             f"- **変更内容**：{notes.get('change_content', '（未記載）')}"
         )
-        if st.button("📝 再記入する", key="prescription_redo"):
+        if st.button("✏️ 編集する", key="prescription_redo"):
             st.session_state["prescription_submitted"] = False
             st.rerun()
         return
 
+    # 記録済みの内容を初期値にする（編集のたびに書き直さずに済むように）
+    notes = st.session_state.get("prescription_notes", {})
+    METHODS = ["電話", "FAX", "直接"]
+
     with st.form("prescription_notes_form"):
-        default_date = _dt.now().strftime("%Y年%m月%d日")
+        default_date = notes.get("date_time") or _dt.now().strftime("%Y年%m月%d日")
         date_time = st.text_input("日時", value=default_date,
                                   placeholder="例：2024年1月15日 14:30")
-        method = st.selectbox("照会方法", ["電話", "FAX", "直接"])
+        method = st.selectbox(
+            "照会方法", METHODS,
+            index=METHODS.index(notes["method"]) if notes.get("method") in METHODS else 0,
+        )
         pharmacist_name = st.text_input("照会者（自分の名前）",
+                                        value=notes.get("pharmacist_name", ""),
                                         placeholder="例：昭薬 花子")
         doctor_name = st.text_input("照会先（医師名・医療機関）",
+                                    value=notes.get("doctor_name", ""),
                                     placeholder="例：昭薬太郎医師（昭和薬科大学付属病院内科）")
         change_content = st.text_area("変更内容",
+                                      value=notes.get("change_content", ""),
                                       placeholder="例：アムロジピン錠5mg　1日2回→1日1回朝食後に変更")
         submitted = st.form_submit_button("📝 記録する")
 
@@ -105,29 +115,36 @@ def _render_soap_form():
         with col2:
             st.markdown(f"**A（評価）**\n\n{notes.get('A') or '（未記載）'}")
             st.markdown(f"**P（計画）**\n\n{notes.get('P') or '（未記載）'}")
-        if st.button("📝 再記入する", key="soap_redo"):
+        if st.button("✏️ 編集する", key="soap_redo"):
             st.session_state["soap_submitted"] = False
             st.rerun()
         return
 
+    # 記録済みの内容を初期値にする（編集のたびに書き直さずに済むように）
+    notes = st.session_state.get("soap_notes", {})
+
     with st.form("soap_form"):
         s = st.text_area(
             "S（Subjective / 主観的情報）",
+            value=notes.get("S", ""),
             placeholder="患者の訴え・発言例：「副作用が心配です」「飲み忘れることがある」など",
             height=80,
         )
         o = st.text_area(
             "O（Objective / 客観的情報）",
+            value=notes.get("O", ""),
             placeholder="処方薬・用法・バイタル・検査値など",
             height=80,
         )
         a = st.text_area(
             "A（Assessment / 評価）",
+            value=notes.get("A", ""),
             placeholder="確認できた問題点・理解度・アドヒアランス状況など",
             height=80,
         )
         p = st.text_area(
             "P（Plan / 計画）",
+            value=notes.get("P", ""),
             placeholder="指導内容・次回フォロー計画など",
             height=80,
         )

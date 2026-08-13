@@ -8,6 +8,8 @@ import urllib.parse
 import streamlit as st
 from datetime import datetime, timedelta
 
+import drug_info
+
 
 # ==========================================================
 # 日付テンプレート置換
@@ -151,7 +153,7 @@ _SKIP_PREFIXES = (
     "用法", "用量", "日数", "副作用", "効果", "残薬",
     "1回", "1日", "注意", "【現在の処方】", "発作", "包装", "使用",
     "血圧", "血糖", "鎮痛", "抗炎", "胃酸", "利尿",
-    "処方提案", "理由", "現在の処方", "変更後", "最新検査値",
+    "処方提案", "理由", "現在の処方", "変更前", "変更後", "最新検査値",
     "トラフ濃度", "目標血中",
 )
 
@@ -546,16 +548,41 @@ def make_prescription_leaflet(prescription_text: str) -> str:
 
         join = lambda xs: "<br>".join(_html.escape(x) for x in xs)
 
+        # くすりのしおりの記載内容（該当薬剤のみ）
+        info = drug_info.lookup(name)
+
+        # ① この薬の作用と効果（しおりを優先し、無ければシナリオ側の記載）
+        effect = info["作用と効果"] if info else None
+        if effect:
+            parts.append(_row("この薬の作用と効果", _html.escape(effect)))
+        elif d["effect"]:
+            parts.append(_row("この薬の作用と効果", join(d["effect"])))
+
+        # ② 用法・用量（処方ごとに異なるため常にシナリオ側）
         if d["dose"]:
             parts.append(_row("用法・用量", join(d["dose"])))
-        if d["effect"]:
-            parts.append(_row("この薬の働き", join(d["effect"])))
+
         for label, value in d["extra"]:
             parts.append(_row(label, _html.escape(value)))
-        if d["side"]:
-            parts.append(_row("主な副作用", join(d["side"]), cls="rx-caution"))
-        if d["caution"]:
-            parts.append(_row("注意", join(d["caution"]), cls="rx-caution"))
+
+        # ③ 注意事項（伝えること＋生活上の注意）
+        caution_html = []
+        for kind, text in drug_info.caution_lines(info):
+            cls = "rx-cap" if kind == "head" else "rx-li"
+            caution_html.append(f'<div class="{cls}">{_html.escape(text)}</div>')
+        # シナリオ固有の注意（造影剤休薬など）も併せて載せる
+        for text in d["caution"]:
+            caution_html.append(f'<div class="rx-li">{_html.escape(text)}</div>')
+        if caution_html:
+            parts.append(_row("注意事項", "".join(caution_html)))
+
+        # ④ 主な副作用
+        side = info["主な副作用"] if info else None
+        if side:
+            parts.append(_row("主な副作用", _html.escape(side), cls="rx-side"))
+        elif d["side"]:
+            parts.append(_row("主な副作用", join(d["side"]), cls="rx-side"))
+
         if d["free"]:
             parts.append(_row("", join(d["free"])))
 

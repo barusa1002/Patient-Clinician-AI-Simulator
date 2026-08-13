@@ -363,6 +363,36 @@ h1 {
     color: #f87171;
 }
 
+/* 主な副作用 */
+.rx-doc .rx-side .rx-v {
+    color: #f0a0a0;
+}
+
+/* 注意事項の見出し（「次のような方は…」「生活上の注意」） */
+.rx-doc .rx-cap {
+    font-weight: 700;
+    opacity: 0.9;
+    margin: 4px 0 2px;
+    line-height: 1.45;
+}
+.rx-doc .rx-cap:first-child {
+    margin-top: 0;
+}
+
+/* 注意事項の箇条書き */
+.rx-doc .rx-li {
+    position: relative;
+    padding-left: 0.9em;
+    margin: 1px 0;
+    line-height: 1.5;
+}
+.rx-doc .rx-li::before {
+    content: "・";
+    position: absolute;
+    left: 0;
+    opacity: 0.6;
+}
+
 /* 全体の補足（■ 見出しや目標値など） */
 .rx-doc .rx-notes {
     border: 1px dashed rgba(128, 128, 128, 0.38);

@@ -281,11 +281,25 @@ h1 {
     line-height: 1.55;
 }
 
-/* 前置き（「（入院前服薬）」など） */
+/* 説明文（「処方箋なし」など） */
 .rx-doc .rx-pre {
     font-size: 0.78rem;
     opacity: 0.75;
     margin-bottom: 6px;
+}
+
+/* 節見出し（「（現在処方）」「（提案）」など） */
+.rx-doc .rx-sec {
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    opacity: 0.85;
+    margin: 10px 0 4px;
+    padding-left: 6px;
+    border-left: 3px solid rgba(167, 139, 250, 0.85);
+}
+.rx-doc .rx-sec:first-child {
+    margin-top: 0;
 }
 
 /* 薬剤1剤ぶんのカード */

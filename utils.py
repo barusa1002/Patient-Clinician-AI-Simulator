@@ -319,6 +319,13 @@ _DOSE_WORD_RE = re.compile(r'(食後|食前|食間|就寝前|貼付|吸入|皮�
 # 全体の補足へ回すラベル
 _GLOBAL_LABELS = ("降圧目標", "管理目標", "血糖管理目標", "目標", "重要", "変更理由", "減量理由")
 
+# それ自体が節見出しになっている括弧行（例：「（副作用）」「（提案）」）
+# 薬剤名を含まない短い括弧書きのみを対象にする
+_SECTION_MARK_RE = re.compile(r'^[（(][^）)]{1,12}[)）]$')
+
+# 「Rp1：」のような処方番号の接頭辞
+_RP_PREFIX_RE = re.compile(r'^Rp\d*\s*[：:]\s*')
+
 _LABEL_RE = re.compile(r'^([^：:]{1,14})[：:]\s*(.*)$')
 
 
@@ -391,8 +398,14 @@ def _move_shared_notes(drugs, notes):
 
 
 def parse_prescription(text: str):
-    """処方テキストを (前置き, 薬剤リスト, 全体補足) に構造化する"""
-    preamble, drugs, notes = [], [], []
+    """
+    処方テキストを (ブロック列, 薬剤リスト, 全体補足) に構造化する。
+
+    ブロック列は出現順に ("text", 文字列) / ("drug", 薬剤dict) を並べたもの。
+    「（現在処方）」「（提案）」のような節見出しが薬剤の間に挟まる書式でも、
+    元の順序どおりに表示できるようにするための構造。
+    """
+    blocks, drugs, notes = [], [], []
     cur = None
     in_notes = False
     last_target = "preamble"   # 直前の行をどこへ入れたか（字下げ継続行の行き先）
@@ -426,15 +439,27 @@ def parse_prescription(text: str):
             elif cur is not None:
                 _classify_line(cur, line)
             else:
-                preamble.append(line)
+                blocks.append(("text", line))
             continue
 
         # 「推奨薬：〇〇」は1剤として扱う
         if line.startswith("推奨薬："):
             cur = _new_drug(("推奨薬", "b-add"), line[4:].strip())
             drugs.append(cur)
+            blocks.append(("drug", cur))
             last_target = "drug"
             continue
+
+        # 「（副作用）」「（提案）」のような、それ自体が節見出しの括弧行は
+        # 直前の薬剤にぶら下げず、以降を区切るセクション見出しとして扱う
+        if _SECTION_MARK_RE.match(line):
+            cur = None
+            blocks.append(("head", line.strip("（）()")))
+            last_target = "preamble"
+            continue
+
+        # 「Rp1：〇〇錠」のような処方番号の接頭辞を落とす
+        line = _RP_PREFIX_RE.sub("", line)
 
         # 薬品名行かどうか
         body = _BADGE_RE.sub("", line)
@@ -464,18 +489,19 @@ def parse_prescription(text: str):
             cur = _new_drug(badge, body, remark,
                             [dose_inline] if dose_inline else [])
             drugs.append(cur)
+            blocks.append(("drug", cur))
             last_target = "drug"
             continue
 
         if cur is None:
-            preamble.append(line)
+            blocks.append(("text", line))
             last_target = "preamble"
         else:
             _classify_line(cur, line)
             last_target = "drug"
 
     _move_shared_notes(drugs, notes)
-    return preamble, drugs, notes
+    return blocks, drugs, notes
 
 
 def _row(label: str, value: str, cls: str = "") -> str:
@@ -488,7 +514,7 @@ def _row(label: str, value: str, cls: str = "") -> str:
 
 def make_prescription_leaflet(prescription_text: str) -> str:
     """処方内容を薬剤情報提供文書風のHTMLにして返す"""
-    preamble, drugs, notes = parse_prescription(prescription_text)
+    blocks, drugs, notes = parse_prescription(prescription_text)
 
     # 薬剤が1つも抽出できない場合は素のテキストとして表示（安全側）。
     # ただし既知の薬品名が含まれていれば添付文書リンクだけは維持する。
@@ -517,14 +543,16 @@ def make_prescription_leaflet(prescription_text: str) -> str:
 
     parts = ['<div class="rx-doc">']
 
-    if preamble:
-        parts.append(
-            '<div class="rx-pre">' +
-            "<br>".join(_html.escape(p) for p in preamble) +
-            "</div>"
-        )
+    for kind, item in blocks:
+        # ── 節見出し・説明文（出現順に描画する）──
+        if kind == "head":
+            parts.append(f'<div class="rx-sec">{_html.escape(item)}</div>')
+            continue
+        if kind == "text":
+            parts.append(f'<div class="rx-pre">{_html.escape(item)}</div>')
+            continue
 
-    for d in drugs:
+        d = item
         parts.append('<div class="rx-card">')
 
         # ── 見出し（バッジ＋薬品名リンク）──

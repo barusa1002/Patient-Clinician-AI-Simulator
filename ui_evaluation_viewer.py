@@ -1,6 +1,7 @@
 #ui_evaluation_viewer.py
 import streamlit as st
 import json
+import html as _html
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
@@ -306,5 +307,189 @@ def render_evaluation_history(histories, show_detail=True):
                 st.markdown(
                     md_list([(*view.get(val, ("remove", "")), item, "")
                              for item, val in scores.items()]),
+                    unsafe_allow_html=True,
+                )
+
+
+# ===============================
+# 評価履歴（課題別・日付別にまとめて表示）
+# ===============================
+_WEEKDAYS = "月火水木金土日"
+_MIN_DT = datetime(1970, 1, 1, tzinfo=_JST)
+
+
+def _parse_jst(raw):
+    """Supabase の created_at（UTC）を日本時間の datetime にする。読めなければ None"""
+    if not raw:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=_JST)
+    return dt.astimezone(_JST)
+
+
+def _history_rows(histories):
+    """表示に必要な値だけを取り出して、新しい順に並べる"""
+    rows = []
+    for h in histories:
+        evaluation = normalize_evaluation(h)
+        if not evaluation:
+            continue
+        scores = evaluation.get("scores", {})
+        valid = {k: v for k, v in scores.items() if v in (0, 1)}
+        total = len(valid)
+        achieved = sum(valid.values())
+        rate = achieved / total if total else 0
+        rows.append({
+            "evaluation": evaluation,
+            "scores": scores,
+            "total": total,
+            "achieved": achieved,
+            "rate": rate,
+            "passed": rate >= 0.7,
+            "dt": _parse_jst(h.get("created_at") or h.get("timestamp")),
+            "scenario": str(h.get("scenario") or "").strip() or "（課題名なし）",
+            "subscenario": str(h.get("subscenario") or "").strip(),
+        })
+    rows.sort(key=lambda r: r["dt"] or _MIN_DT, reverse=True)
+    return rows
+
+
+def _date_label(dt):
+    if dt is None:
+        return "日時不明"
+    return f"{dt.year}年{dt.month}月{dt.day}日（{_WEEKDAYS[dt.weekday()]}）"
+
+
+def _attempt_html(row, title, subtitle):
+    """1回分の結果。<details> で開閉する（st.expander は入れ子にできないため）"""
+    esc = _html.escape
+    ev = row["evaluation"]
+    pct = round(row["rate"] * 100)
+    icon, cls = ("check_circle", "ok") if row["passed"] else ("cancel", "ng")
+
+    parts = [
+        md_score(row["rate"], row["achieved"], row["total"], row["passed"], small=True),
+        f'<div class="md-bar"><span style="width:{pct}%"></span></div>',
+    ]
+
+    achieved_items = ev.get("achieved", [])
+    if achieved_items:
+        parts.append('<div class="md-attempt-h">達成できた項目</div>')
+        parts.append(md_list([("check_circle", "ok", i, "") for i in achieved_items]))
+
+    missing_rows = []
+    for m in ev.get("missing", []):
+        if isinstance(m, dict):
+            reason = m.get("reason", "")
+            missing_rows.append(("error", "ng", m.get("item", "不明"),
+                                 f"理由：{reason}" if reason else ""))
+        else:
+            missing_rows.append(("error", "ng", m, ""))
+    if missing_rows:
+        parts.append('<div class="md-attempt-h">不足・不十分な項目</div>')
+        parts.append(md_list(missing_rows))
+
+    advice = ev.get("advice", [])
+    if advice:
+        parts.append('<div class="md-attempt-h">改善アドバイス</div>')
+        parts.append(md_list([("lightbulb", "tip", a, "") for a in advice]))
+
+    # 評価チェックリストの各項目は、達成・未達をチップで一覧する
+    chips = []
+    for item, val in row["scores"].items():
+        c = "ok" if val == 1 else ("ng" if val == 0 else "")
+        chips.append(f'<span class="md-chipmark {c}">{esc(str(item))}</span>')
+    if chips:
+        parts.append('<div class="md-attempt-h">評価項目</div>')
+        parts.append('<div class="md-chipline">' + "".join(chips) + "</div>")
+
+    sub_html = f'<span class="s">{esc(subtitle)}</span>' if subtitle else ""
+    return (
+        '<details class="md-attempt">'
+        f'<summary><span class="ms {cls}">{icon}</span>'
+        f'<span class="md-attempt-main"><span class="t">{esc(title)}</span>{sub_html}</span>'
+        f'<span class="md-attempt-rate {cls}">{pct}%</span>'
+        '<span class="ms chev">expand_more</span></summary>'
+        f'<div class="md-attempt-body">{"".join(parts)}</div>'
+        "</details>"
+    )
+
+
+def _trend_html(rows):
+    """同じ課題の達成率の推移（古い順）"""
+    chips = []
+    for r in reversed(rows):
+        cls = "ok" if r["passed"] else "ng"
+        chips.append(f'<span class="md-trend-pt {cls}">{round(r["rate"] * 100)}%</span>')
+    return ('<div class="md-trend"><span class="md-trend-label">推移（古い順）</span>'
+            + '<span class="ms md-trend-arrow">arrow_forward</span>'.join(chips) + "</div>")
+
+
+def render_grouped_history(histories):
+    """評価履歴を「課題別」か「日付別」にまとめて表示する"""
+    rows = _history_rows(histories)
+    if not rows:
+        st.info("まだ評価履歴はありません", icon=":material/info:")
+        return
+
+    group_by = st.segmented_control(
+        "まとめ方",
+        ["課題別", "日付別"],
+        default="課題別",
+        key="history_group_by",
+    ) or "課題別"
+
+    n_scenarios = len({r["scenario"] for r in rows})
+    n_days = len({r["dt"].date() for r in rows if r["dt"]})
+    st.caption(f"全{len(rows)}回　{n_scenarios}課題　{n_days}日分")
+
+    if group_by == "課題別":
+        groups = {}
+        for r in rows:                      # rows は新しい順なので、最近練習した課題が先頭に来る
+            groups.setdefault(r["scenario"], []).append(r)
+        for i, (scenario, items) in enumerate(groups.items()):
+            best = max(round(x["rate"] * 100) for x in items)
+            latest = round(items[0]["rate"] * 100)
+            label = f"{scenario}　{len(items)}回・最新 {latest}%・最高 {best}%"
+            icon = ":material/check_circle:" if items[0]["passed"] else ":material/pending:"
+            with st.expander(label, expanded=(i == 0), icon=icon):
+                if len(items) > 1:
+                    st.markdown(_trend_html(items), unsafe_allow_html=True)
+                st.markdown(
+                    "".join(
+                        _attempt_html(
+                            x,
+                            (f"{_date_label(x['dt'])} {x['dt']:%H:%M}" if x["dt"] else "日時不明"),
+                            x["subscenario"],
+                        )
+                        for x in items
+                    ),
+                    unsafe_allow_html=True,
+                )
+    else:
+        groups = {}
+        for r in rows:
+            groups.setdefault(_date_label(r["dt"]), []).append(r)
+        for i, (day, items) in enumerate(groups.items()):
+            avg = round(sum(x["rate"] for x in items) / len(items) * 100)
+            n_pass = sum(1 for x in items if x["passed"])
+            label = f"{day}　{len(items)}回・平均 {avg}%・達成 {n_pass}回"
+            with st.expander(label, expanded=(i == 0), icon=":material/calendar_today:"):
+                st.markdown(
+                    "".join(
+                        _attempt_html(
+                            x,
+                            x["scenario"],
+                            "　".join(filter(None, [
+                                f"{x['dt']:%H:%M}" if x["dt"] else "",
+                                x["subscenario"],
+                            ])),
+                        )
+                        for x in items
+                    ),
                     unsafe_allow_html=True,
                 )

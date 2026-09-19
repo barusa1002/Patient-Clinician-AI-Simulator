@@ -5,7 +5,7 @@ from evaluation import load_user_evaluations
 
 from ui_evaluation_viewer import (
     render_radar_chart,
-    render_evaluation_history
+    render_grouped_history
 )
 
 
@@ -105,7 +105,7 @@ def render_settings_page():
     st.markdown("---")
     st.subheader("評価履歴")
 
-    render_evaluation_history(evaluations, show_detail=True)
+    render_grouped_history(evaluations)
 
     # ===============================
     # チュートリアル

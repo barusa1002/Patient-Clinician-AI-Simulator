@@ -368,6 +368,51 @@ a {
     padding-left: 1rem !important;
 }
 
+/* 切り替えボタン（st.segmented_control）＝ MD3 segmented button
+   選択中は secondary-container で塗り、チェックマークを付ける */
+[data-baseweb="button-group"] {
+    gap: 0 !important;
+}
+[data-testid="stApp"] button:is([kind="segmented_control"], [kind="segmented_controlActive"]) {
+    min-height: 40px !important;
+    padding: 0 1.25rem !important;
+    margin: 0 !important;
+    border: 1px solid var(--md-outline) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--md-on-surface) !important;
+    box-shadow: none !important;
+    transition: background-color var(--md-dur) var(--md-ease) !important;
+}
+[data-testid="stApp"] button:is([kind="segmented_control"], [kind="segmented_controlActive"]) + button {
+    border-left: none !important;
+}
+[data-testid="stApp"] [data-baseweb="button-group"] > button:first-child {
+    border-radius: var(--md-shape-full) 0 0 var(--md-shape-full) !important;
+}
+[data-testid="stApp"] [data-baseweb="button-group"] > button:last-child {
+    border-radius: 0 var(--md-shape-full) var(--md-shape-full) 0 !important;
+}
+[data-testid="stApp"] button[kind="segmented_control"]:hover {
+    background: color-mix(in srgb, var(--md-on-surface) 8%, transparent) !important;
+}
+[data-testid="stApp"] button[kind="segmented_controlActive"] {
+    background: var(--md-secondary-container) !important;
+    color: var(--md-on-secondary-container) !important;
+}
+[data-testid="stApp"] button:is([kind="segmented_control"], [kind="segmented_controlActive"]) p {
+    font-weight: 500 !important;
+    color: inherit !important;
+}
+[data-testid="stApp"] button[kind="segmented_controlActive"] p::before {
+    content: "check";
+    font-family: 'Material Symbols Rounded';
+    font-feature-settings: 'liga';
+    font-size: 1.125rem;
+    vertical-align: -0.2em;
+    margin-right: 0.375rem;
+}
+
 /* 無効状態 */
 [data-testid="stApp"] button:disabled,
 [data-testid="stApp"] button:disabled:hover {
@@ -896,6 +941,150 @@ label[data-baseweb="radio"] > div:first-child > div {
     margin-top: 0.125rem;
 }
 
+/* 評価履歴：1回分の結果（<details> で開閉） */
+/* Streamlit は Markdown 内の details に枠を付けるので打ち消し、区切り線だけにする */
+[data-testid="stMarkdownContainer"] details.md-attempt {
+    border: none !important;
+    border-top: 1px solid var(--md-outline-variant) !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+}
+[data-testid="stMarkdownContainer"] details.md-attempt:first-of-type {
+    border-top: none !important;
+}
+[data-testid="stMarkdownContainer"] details.md-attempt > summary {
+    display: flex !important;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0 !important;
+    padding: 0.625rem 0.5rem !important;
+    border-radius: var(--md-shape-sm);
+    cursor: pointer;
+    list-style: none;
+    transition: background-color var(--md-dur) var(--md-ease);
+}
+.md-attempt > summary::-webkit-details-marker {
+    display: none;
+}
+.md-attempt > summary:hover {
+    background: color-mix(in srgb, var(--md-on-surface) 8%, transparent);
+}
+.md-attempt > summary:focus-visible {
+    outline: 2px solid var(--md-primary);
+    outline-offset: -2px;
+}
+.md-attempt > summary > .ms {
+    font-size: 1.25rem;
+    flex: 0 0 auto;
+}
+.md-attempt > summary > .ms.ok { color: var(--md-success); }
+.md-attempt > summary > .ms.ng { color: var(--md-error); }
+.md-attempt-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+.md-attempt-main .t {
+    color: var(--md-on-surface);
+    font-weight: 500;
+    line-height: 1.4;
+}
+.md-attempt-main .s {
+    color: var(--md-on-surface-variant);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+.md-attempt-rate {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    min-width: 3.25rem;
+    text-align: right;
+}
+.md-attempt-rate.ok { color: var(--md-success); }
+.md-attempt-rate.ng { color: var(--md-error); }
+.md-attempt > summary > .ms.chev {
+    color: var(--md-on-surface-variant);
+    transition: transform var(--md-dur) var(--md-ease);
+}
+.md-attempt[open] > summary > .ms.chev {
+    transform: rotate(180deg);
+}
+.md-attempt-body {
+    padding: 0.25rem 0.5rem 1rem 2.5rem;
+}
+.md-attempt-h {
+    margin: 0.875rem 0 0.125rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--md-on-surface-variant);
+}
+
+/* 評価履歴：小さな進捗バー（HTML内で使うため st.progress の代わり） */
+.md-bar {
+    height: 6px;
+    margin: 0.625rem 0 0.25rem;
+    border-radius: var(--md-shape-full);
+    background: var(--md-secondary-container);
+    overflow: hidden;
+}
+.md-bar > span {
+    display: block;
+    height: 100%;
+    border-radius: var(--md-shape-full);
+    background: var(--md-primary);
+}
+
+/* 評価履歴：評価項目ごとの達成・未達 */
+.md-chipline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-top: 0.375rem;
+}
+.md-chipmark {
+    display: inline-flex;
+    align-items: center;
+    height: 1.75rem;
+    padding: 0 0.625rem;
+    border-radius: var(--md-shape-sm);
+    font-size: 0.8125rem;
+    background: var(--md-surface-container-high);
+    color: var(--md-on-surface-variant);
+}
+.md-chipmark.ok { background: var(--md-success-container); color: var(--md-on-success-container); }
+.md-chipmark.ng { background: var(--md-error-container);   color: var(--md-on-error-container); }
+
+/* 評価履歴：同じ課題の達成率の推移 */
+.md-trend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.375rem;
+    margin-bottom: 0.5rem;
+    font-variant-numeric: tabular-nums;
+}
+.md-trend-label {
+    font-size: 0.8125rem;
+    color: var(--md-on-surface-variant);
+    margin-right: 0.25rem;
+}
+.md-trend-pt {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--md-shape-sm);
+}
+.md-trend-pt.ok { background: var(--md-success-container); color: var(--md-on-success-container); }
+.md-trend-pt.ng { background: var(--md-error-container);   color: var(--md-on-error-container); }
+.md-trend-arrow {
+    font-size: 0.875rem;
+    color: var(--md-on-surface-variant);
+}
+
 /* 模範解答：既存の発言と、AIが補った発言 */
 .md-transcript {
     line-height: 1.8;
@@ -1222,5 +1411,10 @@ label[data-baseweb="radio"] > div:first-child > div {
 
     .md-mode-desc {
         min-height: 0;
+    }
+
+    /* 評価履歴：中身の左余白を詰める */
+    .md-attempt-body {
+        padding-left: 0.5rem;
     }
 }

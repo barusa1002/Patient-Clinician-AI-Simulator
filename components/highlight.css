@@ -1,271 +1,743 @@
-/* =================================
-   チュートリアル ハイライト
-================================= */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
 
-/* 光る枠 */
-.tutorial-highlight {
-    border: 3px solid #ff4b4b;
-    border-radius: 10px;
-    padding: 10px;
-    background-color: rgba(255, 75, 75, 0.08);
-    animation: tutorial-glow 1.2s infinite alternate;
+/* =====================================================================
+   Material Design 3 テーマ
+
+   ・配色はロゴの3色を基準色にして、MD3公式の配色アルゴリズム
+     （material-color-utilities / SchemeTonalSpot・2021年版仕様）で生成した。
+       紺     #104890 … primary / secondary / 背景などの中立色
+       ティール #10A8A8 … tertiary（患者側の差し色）
+       緑     #38A040 … success（評価の「達成」表示）
+     ライトの primary だけはロゴの紺そのものにしている（白文字と 8.9:1）。
+   ・ライト／ダークは Streamlit のテーマに追従する。
+     app.py のスクリプトが Streamlit の文字色からテーマを判定して
+     <html data-md-theme="light|dark"> を付ける。スクリプトが動く前は
+     OSの設定（prefers-color-scheme）で仮に決める。
+     ※ Streamlit 側の文字色を上書きすると判定できなくなるため、
+       .stApp の color は変更しないこと。
+   ・グラデーション、発光、ぼかし、ホバーで浮き上がる動きは使わない。
+     奥行きは MD3 の「トーンによる高さ表現」（surface-container の段階）で出す。
+===================================================================== */
+
+:root {
+    --md-primary: #104890;
+    --md-on-primary: #FFFFFF;
+    --md-primary-container: #D7E2FF;
+    --md-on-primary-container: #294677;
+    --md-secondary: #565E71;
+    --md-on-secondary: #FFFFFF;
+    --md-secondary-container: #DAE2F9;
+    --md-on-secondary-container: #3E4759;
+    --md-tertiary: #006A6A;
+    --md-on-tertiary: #FFFFFF;
+    --md-tertiary-container: #9CF1F0;
+    --md-on-tertiary-container: #004F50;
+    --md-error: #BA1A1A;
+    --md-on-error: #FFFFFF;
+    --md-error-container: #FFDAD6;
+    --md-on-error-container: #93000A;
+    --md-success: #3B6939;
+    --md-success-container: #BCF0B4;
+    --md-on-success-container: #235024;
+    --md-warning: #7F5700;
+    --md-warning-container: #FFDEAE;
+    --md-on-warning-container: #281900;
+    --md-surface: #F9F9FF;
+    --md-on-surface: #1A1C20;
+    --md-on-surface-variant: #44474E;
+    --md-surface-container-lowest: #FFFFFF;
+    --md-surface-container-low: #F3F3FA;
+    --md-surface-container: #EDEDF4;
+    --md-surface-container-high: #E8E7EE;
+    --md-surface-container-highest: #E2E2E9;
+    --md-outline: #74777F;
+    --md-outline-variant: #C4C6D0;
+    --md-inverse-surface: #2E3036;
+    --md-inverse-on-surface: #F0F0F7;
+
+    /* 形（MD3 shape scale） */
+    --md-shape-xs: 4px;
+    --md-shape-sm: 8px;
+    --md-shape-md: 12px;
+    --md-shape-lg: 16px;
+    --md-shape-xl: 28px;
+    --md-shape-full: 999px;
+
+    /* 動き（MD3 standard easing） */
+    --md-ease: cubic-bezier(0.2, 0, 0, 1);
+    --md-dur: 200ms;
+
+    /* 高さ（elevation level 1 / 2） */
+    --md-elev-1: 0 1px 2px rgba(0, 0, 0, 0.30), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+    --md-elev-2: 0 1px 2px rgba(0, 0, 0, 0.30), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+
+    --md-font: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo',
+               system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+    color-scheme: light;
 }
 
-/* 光るアニメーション */
-@keyframes tutorial-glow {
-    from {
-        box-shadow: 0 0 6px rgba(255,75,75,0.4);
+/* ダーク（Streamlit のテーマ判定後） */
+html[data-md-theme="dark"] {
+    --md-primary: #ABC7FF;
+    --md-on-primary: #0D2F5F;
+    --md-primary-container: #294677;
+    --md-on-primary-container: #D7E2FF;
+    --md-secondary: #BEC6DC;
+    --md-on-secondary: #283041;
+    --md-secondary-container: #3E4759;
+    --md-on-secondary-container: #DAE2F9;
+    --md-tertiary: #80D5D4;
+    --md-on-tertiary: #003737;
+    --md-tertiary-container: #004F50;
+    --md-on-tertiary-container: #9CF1F0;
+    --md-error: #FFB4AB;
+    --md-on-error: #690005;
+    --md-error-container: #93000A;
+    --md-on-error-container: #FFDAD6;
+    --md-success: #A1D39A;
+    --md-success-container: #235024;
+    --md-on-success-container: #BCF0B4;
+    --md-warning: #FFBA3E;
+    --md-warning-container: #604100;
+    --md-on-warning-container: #FFDEAE;
+    --md-surface: #111318;
+    --md-on-surface: #E2E2E9;
+    --md-on-surface-variant: #C4C6D0;
+    --md-surface-container-lowest: #0C0E13;
+    --md-surface-container-low: #1A1C20;
+    --md-surface-container: #1E2025;
+    --md-surface-container-high: #282A2F;
+    --md-surface-container-highest: #33353A;
+    --md-outline: #8E9099;
+    --md-outline-variant: #44474E;
+    --md-inverse-surface: #E2E2E9;
+    --md-inverse-on-surface: #2E3036;
+    color-scheme: dark;
+}
+
+/* スクリプトが動く前の仮判定（上と同じ値） */
+@media (prefers-color-scheme: dark) {
+    html:not([data-md-theme]) {
+        --md-primary: #ABC7FF;
+        --md-on-primary: #0D2F5F;
+        --md-primary-container: #294677;
+        --md-on-primary-container: #D7E2FF;
+        --md-secondary: #BEC6DC;
+        --md-on-secondary: #283041;
+        --md-secondary-container: #3E4759;
+        --md-on-secondary-container: #DAE2F9;
+        --md-tertiary: #80D5D4;
+        --md-on-tertiary: #003737;
+        --md-tertiary-container: #004F50;
+        --md-on-tertiary-container: #9CF1F0;
+        --md-error: #FFB4AB;
+        --md-on-error: #690005;
+        --md-error-container: #93000A;
+        --md-on-error-container: #FFDAD6;
+        --md-success: #A1D39A;
+        --md-success-container: #235024;
+        --md-on-success-container: #BCF0B4;
+        --md-warning: #FFBA3E;
+        --md-warning-container: #604100;
+        --md-on-warning-container: #FFDEAE;
+        --md-surface: #111318;
+        --md-on-surface: #E2E2E9;
+        --md-on-surface-variant: #C4C6D0;
+        --md-surface-container-lowest: #0C0E13;
+        --md-surface-container-low: #1A1C20;
+        --md-surface-container: #1E2025;
+        --md-surface-container-high: #282A2F;
+        --md-surface-container-highest: #33353A;
+        --md-outline: #8E9099;
+        --md-outline-variant: #44474E;
+        --md-inverse-surface: #E2E2E9;
+        --md-inverse-on-surface: #2E3036;
+        color-scheme: dark;
     }
-    to {
-        box-shadow: 0 0 25px rgba(255,75,75,1);
-    }
-}
-
-/* サイドバー用 */
-.sidebar-highlight {
-    border: 3px solid #ff4b4b;
-    border-radius: 8px;
-    padding: 6px;
-    animation: tutorial-glow 1.5s infinite alternate;
-}
-
-/* 入力欄用 */
-.input-highlight {
-    border: 3px solid #3cb371;
-    border-radius: 8px;
-    padding: 6px;
-    background-color: rgba(60,179,113,0.08);
-    animation: input-glow 1.2s infinite alternate;
-}
-
-@keyframes input-glow {
-    from {
-        box-shadow: 0 0 5px rgba(60,179,113,0.4);
-    }
-    to {
-        box-shadow: 0 0 20px rgba(60,179,113,0.9);
-    }
-}
-
-/* 説明ラベル */
-.tutorial-label {
-    font-weight: bold;
-    color: #ff4b4b;
-    font-size: 15px;
-    background-color: rgba(255,75,75,0.1);
-    padding: 4px 8px;
-    border-radius: 6px;
-    display: inline-block;
-}
-
-/* 下矢印 */
-.tutorial-arrow {
-    font-size: 20px;
-    color: #ff4b4b;
-    animation: bounce 1s infinite;
-}
-
-@keyframes bounce {
-    0% {transform: translateY(0);}
-    50% {transform: translateY(6px);}
-    100% {transform: translateY(0);}
 }
 
 
-/* =================================
-   モバイル最適化 & モダンUIスタイル
-================================= */
-
-/* ----------------------------------
-   フォント・ベース
----------------------------------- */
-[data-testid="stAppViewContainer"],
+/* =====================================================================
+   面（アプリ背景・ヘッダー・サイドバー・下部の入力欄）
+===================================================================== */
 [data-testid="stApp"] {
-    font-family: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic UI',
-                 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    background: var(--md-surface) !important;
 }
 
-/* ----------------------------------
-   全体パディング最適化
----------------------------------- */
-.main .block-container {
-    padding-top: 1.25rem !important;
+/* ヘッダーはぼかさず、背景と同じ色の平らな面にする */
+[data-testid="stHeader"] {
+    background: var(--md-surface) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* 上端の虹色ライン */
+[data-testid="stDecoration"] {
+    display: none !important;
+}
+
+/* サイドバー＝MD3のナビゲーションドロワー */
+[data-testid="stSidebar"] {
+    background: var(--md-surface-container-low) !important;
+    border-right: 1px solid var(--md-outline-variant) !important;
+}
+
+/* 下部のチャット入力の帯 */
+[data-testid="stBottom"],
+[data-testid="stBottom"] > div,
+[data-testid="stBottomBlockContainer"] {
+    background: var(--md-surface) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+[data-testid="stBottomBlockContainer"] {
+    padding-top: 0.75rem !important;
+    padding-bottom: 1rem !important;
+}
+
+.main .block-container,
+[data-testid="stMainBlockContainer"] {
+    padding-top: 2.5rem !important;
     padding-bottom: 6rem !important;
 }
 
-/* ----------------------------------
-   タイトル（h1）デスクトップ
----------------------------------- */
+
+/* =====================================================================
+   文字（MD3 type scale）
+   アイコン（Material Symbols）のフォントを壊さないよう、
+   span / div には直接フォントを指定しない。
+===================================================================== */
+[data-testid="stApp"],
+[data-testid="stApp"] :is(p, li, label, input, textarea, button, summary,
+                          h1, h2, h3, h4, h5, h6, td, th, a, code) {
+    font-family: var(--md-font) !important;
+}
+[data-testid="stApp"] code {
+    font-family: 'Roboto Mono', ui-monospace, 'Consolas', monospace !important;
+}
+
+/* アプリ名（Headline small） */
 h1 {
-    font-weight: 800 !important;
-    letter-spacing: -0.01em !important;
-    background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 100%);
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    background-clip: text !important;
+    font-size: 1.5rem !important;
+    line-height: 2rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+    color: var(--md-on-surface) !important;
+    background: none !important;
+    -webkit-text-fill-color: currentColor !important;
+    padding: 0 0 0.25rem !important;
 }
 
-/* ----------------------------------
-   モバイル専用（～768px）
----------------------------------- */
-@media screen and (max-width: 768px) {
-
-    /* タイトルをスマホ縦画面に収まるサイズに縮小 */
-    h1 {
-        font-size: 0.95rem !important;
-        line-height: 1.3 !important;
-        margin-bottom: 0.1rem !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-    }
-
-    /* サブヘッダー縮小 */
-    h2 {
-        font-size: 0.95rem !important;
-        line-height: 1.35 !important;
-        margin-bottom: 0.4rem !important;
-    }
-
-    h3 {
-        font-size: 0.9rem !important;
-    }
-
-    /* コンテンツのパディングを詰める */
-    .main .block-container {
-        padding: 0.5rem 0.6rem 6rem !important;
-        max-width: 100% !important;
-    }
-
-    /* ボタン共通 */
-    .stButton > button {
-        min-height: 36px !important;
-        font-size: 0.82rem !important;
-    }
-
-    /* 水平線のマージン削減 */
-    hr {
-        margin: 0.4rem 0 !important;
-    }
-
-    /* テキスト全体を少し小さく */
-    p, li, span, label {
-        font-size: 0.88rem !important;
-    }
+/* 画面の見出し（Title large） */
+h2 {
+    font-size: 1.375rem !important;
+    line-height: 1.75rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+    color: var(--md-on-surface) !important;
 }
 
-/* ----------------------------------
-   モダンボタンスタイル
----------------------------------- */
-.stButton > button {
-    border-radius: 22px !important;
-    font-weight: 600 !important;
-    letter-spacing: 0.03em !important;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+/* 小見出し（Title medium） */
+h3 {
+    font-size: 1.0625rem !important;
+    line-height: 1.5rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.01em !important;
+    color: var(--md-on-surface) !important;
+}
+
+/* さらに下の小見出し（Title small） */
+h4 {
+    font-size: 0.9375rem !important;
+    line-height: 1.375rem !important;
+    font-weight: 700 !important;
+    color: var(--md-on-surface-variant) !important;
+    padding-top: 0.75rem !important;
+}
+
+/* サイドバー内の見出しは一段小さく（Title small） */
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 {
+    font-size: 0.9375rem !important;
+    line-height: 1.375rem !important;
+}
+
+/* キャプション（Body small） */
+[data-testid="stCaptionContainer"],
+[data-testid="stCaptionContainer"] p {
+    color: var(--md-on-surface-variant) !important;
+    font-size: 0.8125rem !important;
+    line-height: 1.25rem !important;
+}
+
+/* 区切り線 */
+hr,
+[data-testid="stMarkdownContainer"] hr {
     border: none !important;
-    padding: 0.45rem 1.2rem !important;
+    border-top: 1px solid var(--md-outline-variant) !important;
+    margin: 1rem 0 !important;
+    opacity: 1 !important;
+    background: none !important;
 }
 
-.stButton > button:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.35) !important;
+a {
+    color: var(--md-primary) !important;
 }
 
-.stButton > button:active {
-    transform: translateY(0) !important;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2) !important;
+/* 見出しの横に出る「リンクをコピー」アイコン */
+[data-testid="stHeaderActionElements"] {
+    display: none !important;
 }
 
-/* プライマリボタン */
-.stButton > button[kind="primary"] {
-    background: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%) !important;
-    color: white !important;
+
+/* =====================================================================
+   ボタン（MD3 common buttons）
+     主ボタン（type="primary"）… Filled button
+     通常ボタン               … Filled tonal button
+     サイドバーのボタン       … Outlined button（全幅・左寄せ）
+   高さ40px・角丸は全円。状態は「色を少し重ねる（state layer）」で表し、
+   ボタン自体は動かさない。
+===================================================================== */
+[data-testid="stApp"] button:is([kind="primary"], [kind="secondary"],
+                                [kind="primaryFormSubmit"], [kind="secondaryFormSubmit"]) {
+    min-height: 40px !important;
+    border-radius: var(--md-shape-full) !important;
+    padding: 0.5rem 1.5rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.01em !important;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: background-color var(--md-dur) var(--md-ease),
+                box-shadow var(--md-dur) var(--md-ease),
+                border-color var(--md-dur) var(--md-ease) !important;
+}
+[data-testid="stApp"] button:is([kind="primary"], [kind="secondary"],
+                                [kind="primaryFormSubmit"], [kind="secondaryFormSubmit"]) p {
+    font-size: 0.9375rem !important;
+    font-weight: 500 !important;
 }
 
-/* セカンダリ（ヒントボタンなど） */
-.stButton > button[kind="secondary"] {
-    background: rgba(255, 255, 255, 0.08) !important;
-    color: inherit !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+/* Filled */
+[data-testid="stApp"] button:is([kind="primary"], [kind="primaryFormSubmit"]) {
+    background: var(--md-primary) !important;
+    color: var(--md-on-primary) !important;
+    border: none !important;
+}
+[data-testid="stApp"] button:is([kind="primary"], [kind="primaryFormSubmit"]):hover {
+    background: color-mix(in srgb, var(--md-on-primary) 8%, var(--md-primary)) !important;
+    box-shadow: var(--md-elev-1) !important;
+}
+[data-testid="stApp"] button:is([kind="primary"], [kind="primaryFormSubmit"]):active {
+    background: color-mix(in srgb, var(--md-on-primary) 12%, var(--md-primary)) !important;
+    box-shadow: none !important;
 }
 
-.stButton > button[kind="secondary"]:hover {
-    background: rgba(255, 255, 255, 0.14) !important;
-    border-color: rgba(255, 255, 255, 0.25) !important;
+/* Filled tonal */
+[data-testid="stApp"] button:is([kind="secondary"], [kind="secondaryFormSubmit"]) {
+    background: var(--md-secondary-container) !important;
+    color: var(--md-on-secondary-container) !important;
+    border: none !important;
+}
+[data-testid="stApp"] button:is([kind="secondary"], [kind="secondaryFormSubmit"]):hover {
+    background: color-mix(in srgb, var(--md-on-secondary-container) 8%, var(--md-secondary-container)) !important;
+    box-shadow: var(--md-elev-1) !important;
+}
+[data-testid="stApp"] button:is([kind="secondary"], [kind="secondaryFormSubmit"]):active {
+    background: color-mix(in srgb, var(--md-on-secondary-container) 12%, var(--md-secondary-container)) !important;
+    box-shadow: none !important;
 }
 
-/* ----------------------------------
-   チャットメッセージ
----------------------------------- */
-
-/* ユーザー発言 */
-[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) {
-    background: rgba(124, 58, 237, 0.1) !important;
-    border-radius: 16px !important;
-    border: 1px solid rgba(124, 58, 237, 0.2) !important;
-    margin-bottom: 0.6rem !important;
-    padding: 0.6rem 0.75rem !important;
-}
-
-/* AI（アシスタント）発言 */
-[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) {
-    background: rgba(255, 255, 255, 0.04) !important;
-    border-radius: 16px !important;
-    border: 1px solid rgba(255, 255, 255, 0.07) !important;
-    margin-bottom: 0.6rem !important;
-    padding: 0.6rem 0.75rem !important;
-}
-
-/* ----------------------------------
-   チャット入力フィールド
----------------------------------- */
-[data-testid="stChatInput"] {
-    border-radius: 28px !important;
-}
-
-[data-testid="stChatInput"] > div {
-    border-radius: 28px !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
-}
-
-/* ----------------------------------
-   情報ボックス（ヒント表示）
----------------------------------- */
-[data-testid="stAlert"][data-baseweb="notification"] {
-    border-radius: 14px !important;
-    border-left: 4px solid #60a5fa !important;
-    padding: 0.75rem 1rem !important;
-}
-
-/* ----------------------------------
-   Expander（折りたたみ）
----------------------------------- */
-[data-testid="stExpander"] {
-    border-radius: 14px !important;
-    overflow: hidden !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-}
-
-/* ----------------------------------
-   サイドバー
----------------------------------- */
-[data-testid="stSidebar"] {
-    background: rgba(15, 15, 25, 0.95) !important;
-}
-
-[data-testid="stSidebarContent"] .stButton > button {
-    border-radius: 10px !important;
+/* サイドバー：Outlined・全幅・左寄せ */
+[data-testid="stSidebar"] button[kind="secondary"] {
     width: 100% !important;
-    text-align: left !important;
     justify-content: flex-start !important;
+    background: transparent !important;
+    color: var(--md-on-surface-variant) !important;
+    border: 1px solid var(--md-outline-variant) !important;
+    padding-left: 1rem !important;
+}
+[data-testid="stSidebar"] button[kind="secondary"]:hover {
+    background: color-mix(in srgb, var(--md-on-surface) 8%, transparent) !important;
+    border-color: var(--md-outline) !important;
+    box-shadow: none !important;
+}
+[data-testid="stSidebar"] button[kind="primary"] {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    padding-left: 1rem !important;
 }
 
-/* ----------------------------------
-   サイドバーの st.text（前回の薬歴・お薬手帳）
-   既定では white-space: pre のため長文が1行になり
-   横スクロールしないと読めない。折り返して表示する。
----------------------------------- */
+/* 無効状態 */
+[data-testid="stApp"] button:disabled,
+[data-testid="stApp"] button:disabled:hover {
+    background: color-mix(in srgb, var(--md-on-surface) 12%, transparent) !important;
+    color: color-mix(in srgb, var(--md-on-surface) 38%, transparent) !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    cursor: not-allowed !important;
+}
+
+/* キーボード操作時の焦点表示 */
+[data-testid="stApp"] button:focus-visible {
+    outline: 2px solid var(--md-primary) !important;
+    outline-offset: 2px !important;
+    box-shadow: none !important;
+}
+
+/* ボタン内のアイコン（Material Symbols 18px） */
+[data-testid="stApp"] button [data-testid="stIconMaterial"] {
+    font-size: 1.125rem !important;
+}
+
+
+/* =====================================================================
+   入力欄（MD3 outlined text field）
+===================================================================== */
+[data-baseweb="input"],
+[data-baseweb="textarea"],
+[data-baseweb="select"] > div:first-child {
+    background: var(--md-surface-container-lowest) !important;
+    border: 1px solid var(--md-outline) !important;
+    border-radius: var(--md-shape-xs) !important;
+    transition: border-color var(--md-dur) var(--md-ease),
+                box-shadow var(--md-dur) var(--md-ease) !important;
+}
+[data-baseweb="input"]:hover,
+[data-baseweb="textarea"]:hover,
+[data-baseweb="select"] > div:first-child:hover {
+    border-color: var(--md-on-surface) !important;
+}
+/* 焦点：2pxの primary 枠（MD3の focused outline） */
+[data-baseweb="input"]:focus-within,
+[data-baseweb="textarea"]:focus-within,
+[data-baseweb="select"] > div:first-child:focus-within {
+    border-color: var(--md-primary) !important;
+    box-shadow: inset 0 0 0 1px var(--md-primary) !important;
+}
+[data-baseweb="input"] > div,
+[data-baseweb="textarea"] > div,
+[data-baseweb="input"] input,
+[data-baseweb="textarea"] textarea {
+    background: transparent !important;
+    color: var(--md-on-surface) !important;
+    caret-color: var(--md-primary) !important;
+}
+[data-baseweb="input"] input,
+[data-baseweb="textarea"] textarea {
+    padding: 0.625rem 0.875rem !important;
+}
+/* パスワード欄の「表示」ボタンの背景 */
+[data-baseweb="input"] button {
+    background: transparent !important;
+}
+
+/* 入力欄のラベル（Body medium・やや濃く） */
+[data-testid="stWidgetLabel"] p {
+    color: var(--md-on-surface-variant) !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+}
+
+/* プルダウンの一覧（MD3 menu） */
+[data-baseweb="popover"] [role="listbox"],
+[data-baseweb="popover"] ul {
+    background: var(--md-surface-container) !important;
+    border-radius: var(--md-shape-xs) !important;
+    box-shadow: var(--md-elev-2) !important;
+}
+[data-baseweb="popover"] li[role="option"] {
+    color: var(--md-on-surface) !important;
+}
+[data-baseweb="popover"] li[role="option"]:hover,
+[data-baseweb="popover"] li[aria-selected="true"] {
+    background: color-mix(in srgb, var(--md-on-surface) 8%, transparent) !important;
+}
+
+
+/* =====================================================================
+   チャット
+   薬剤師（学生）の発言は右寄せの primary-container、
+   患者・医師（AI）の発言は左寄せの surface-container-high。
+===================================================================== */
+[data-testid="stChatMessage"] {
+    background: transparent !important;
+    border: none !important;
+    padding: 0.25rem 0 !important;
+    margin-bottom: 0.5rem !important;
+    gap: 0.75rem !important;
+    align-items: flex-start !important;
+}
+
+/* 吹き出し */
+[data-testid="stChatMessage"] [data-testid="stChatMessageContent"] {
+    flex: 0 1 auto !important;
+    /* Streamlit は margin:auto を付けており、幅を詰めると中央に寄ってしまう */
+    margin: 0 !important;
+    max-width: min(80%, 44rem) !important;
+    padding: 0.75rem 1rem !important;
+    border-radius: 4px var(--md-shape-xl) var(--md-shape-xl) var(--md-shape-xl) !important;
+    background: var(--md-surface-container-high) !important;
+    color: var(--md-on-surface) !important;
+}
+[data-testid="stChatMessage"] [data-testid="stChatMessageContent"] p {
+    color: inherit !important;
+    line-height: 1.6 !important;
+}
+
+/* 学生側：右寄せ */
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
+    flex-direction: row-reverse !important;
+}
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"])
+    [data-testid="stChatMessageContent"] {
+    background: var(--md-primary-container) !important;
+    color: var(--md-on-primary-container) !important;
+    border-radius: var(--md-shape-xl) 4px var(--md-shape-xl) var(--md-shape-xl) !important;
+}
+
+/* アバター：Streamlit既定の顔・ロボットの絵を、Material Symbols に差し替える */
+[data-testid="stChatMessageAvatarUser"],
+[data-testid="stChatMessageAvatarAssistant"] {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    min-width: 2.25rem !important;
+    border-radius: var(--md-shape-full) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+[data-testid="stChatMessageAvatarUser"] > *,
+[data-testid="stChatMessageAvatarAssistant"] > * {
+    display: none !important;
+}
+[data-testid="stChatMessageAvatarUser"]::after,
+[data-testid="stChatMessageAvatarAssistant"]::after {
+    font-family: 'Material Symbols Rounded';
+    font-size: 1.25rem;
+    line-height: 1;
+    font-feature-settings: 'liga';
+    -webkit-font-feature-settings: 'liga';
+}
+/* 薬剤師（学生） */
+[data-testid="stChatMessageAvatarUser"] {
+    background: var(--md-primary) !important;
+    color: var(--md-on-primary) !important;
+}
+[data-testid="stChatMessageAvatarUser"]::after {
+    content: "local_pharmacy";
+}
+/* 患者・医師（AI） */
+[data-testid="stChatMessageAvatarAssistant"] {
+    background: var(--md-tertiary-container) !important;
+    color: var(--md-on-tertiary-container) !important;
+}
+[data-testid="stChatMessageAvatarAssistant"]::after {
+    content: "person";
+}
+
+/* 入力欄（MD3 search bar に近い形） */
+[data-testid="stChatInput"] {
+    background: var(--md-surface-container-high) !important;
+    border: 1px solid transparent !important;
+    border-radius: var(--md-shape-xl) !important;
+    box-shadow: none !important;
+    transition: border-color var(--md-dur) var(--md-ease) !important;
+}
+[data-testid="stChatInput"] > div {
+    background: transparent !important;
+    border: none !important;
+    border-radius: var(--md-shape-xl) !important;
+    box-shadow: none !important;
+}
+[data-testid="stChatInput"]:focus-within {
+    border-color: var(--md-primary) !important;
+}
+/* 一般の入力欄（outlined）の枠が、チャット入力内の textarea にも当たるのを打ち消す */
+[data-testid="stChatInput"] [data-baseweb="textarea"],
+[data-testid="stChatInput"] [data-baseweb="textarea"]:hover,
+[data-testid="stChatInput"] [data-baseweb="textarea"]:focus-within {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+[data-testid="stChatInputTextArea"] {
+    background: transparent !important;
+    color: var(--md-on-surface) !important;
+    caret-color: var(--md-primary) !important;
+    padding-left: 1.25rem !important;
+}
+[data-testid="stChatInputSubmitButton"] {
+    color: var(--md-primary) !important;
+    background: transparent !important;
+    border-radius: var(--md-shape-full) !important;
+}
+[data-testid="stApp"] [data-testid="stChatInputSubmitButton"]:disabled {
+    background: transparent !important;
+    color: color-mix(in srgb, var(--md-on-surface) 38%, transparent) !important;
+}
+[data-testid="stChatInputSubmitButton"]:hover {
+    background: color-mix(in srgb, var(--md-primary) 8%, transparent) !important;
+}
+
+
+/* =====================================================================
+   カード（st.container(border=True)）と 折りたたみ（st.expander）
+   枠付きコンテナだけにスタイルが付くため、
+   スタイルの無い「st-emotion-cache-0」以外を枠付きとみなす。
+===================================================================== */
+[data-testid="stVerticalBlockBorderWrapper"]:not(.st-emotion-cache-0) {
+    background: var(--md-surface-container-low) !important;
+    border: 1px solid var(--md-outline-variant) !important;
+    border-radius: var(--md-shape-md) !important;
+}
+
+/* フォーム（SOAP薬歴・処方箋備考欄）もカードと同じ見た目にする */
+[data-testid="stForm"] {
+    background: var(--md-surface-container-low) !important;
+    border: 1px solid var(--md-outline-variant) !important;
+    border-radius: var(--md-shape-md) !important;
+}
+
+[data-testid="stExpander"] details {
+    background: var(--md-surface-container-low) !important;
+    border: 1px solid var(--md-outline-variant) !important;
+    border-radius: var(--md-shape-md) !important;
+    overflow: hidden !important;
+}
+[data-testid="stSidebar"] [data-testid="stExpander"] details {
+    background: var(--md-surface-container-lowest) !important;
+}
+[data-testid="stExpander"] summary {
+    border-radius: var(--md-shape-md) !important;
+    transition: background-color var(--md-dur) var(--md-ease) !important;
+}
+[data-testid="stExpander"] summary:hover {
+    background: color-mix(in srgb, var(--md-on-surface) 8%, transparent) !important;
+}
+[data-testid="stExpander"] summary p {
+    font-weight: 500 !important;
+    color: var(--md-on-surface) !important;
+}
+[data-testid="stExpander"] summary [data-testid="stIconMaterial"] {
+    color: var(--md-on-surface-variant) !important;
+}
+[data-testid="stExpanderDetails"] {
+    border-top: 1px solid var(--md-outline-variant) !important;
+    padding-top: 0.75rem !important;
+}
+
+
+/* =====================================================================
+   お知らせ（st.info / success / warning / error）
+   MD3にはアラート部品が無いため、各色の container で表す。
+===================================================================== */
+[data-testid="stAlertContainer"] {
+    border-radius: var(--md-shape-md) !important;
+    border: none !important;
+    padding: 0.875rem 1rem !important;
+}
+[data-testid="stAlertContainer"]:has([data-testid="stAlertContentInfo"]) {
+    background: var(--md-primary-container) !important;
+    color: var(--md-on-primary-container) !important;
+}
+[data-testid="stAlertContainer"]:has([data-testid="stAlertContentSuccess"]) {
+    background: var(--md-success-container) !important;
+    color: var(--md-on-success-container) !important;
+}
+[data-testid="stAlertContainer"]:has([data-testid="stAlertContentWarning"]) {
+    background: var(--md-warning-container) !important;
+    color: var(--md-on-warning-container) !important;
+}
+[data-testid="stAlertContainer"]:has([data-testid="stAlertContentError"]) {
+    background: var(--md-error-container) !important;
+    color: var(--md-on-error-container) !important;
+}
+[data-testid="stAlertContainer"] :is(p, li, [data-testid="stIconMaterial"]) {
+    color: inherit !important;
+}
+
+
+/* =====================================================================
+   タブ・チェックボックス・ラジオ・進捗バー
+   Streamlit 既定の赤（#FF4B4B）を primary に置き換える。
+===================================================================== */
+[data-baseweb="tab-list"] {
+    gap: 0 !important;
+}
+[data-baseweb="tab"] {
+    padding: 0.75rem 1.25rem !important;
+    color: var(--md-on-surface-variant) !important;
+    transition: background-color var(--md-dur) var(--md-ease) !important;
+}
+[data-baseweb="tab"] p {
+    font-weight: 500 !important;
+}
+[data-baseweb="tab"]:hover {
+    background: color-mix(in srgb, var(--md-on-surface) 8%, transparent) !important;
+}
+[data-baseweb="tab"][aria-selected="true"] {
+    color: var(--md-primary) !important;
+}
+[data-baseweb="tab-highlight"] {
+    background-color: var(--md-primary) !important;
+    height: 3px !important;
+    border-radius: 3px 3px 0 0 !important;
+}
+[data-baseweb="tab-border"] {
+    background-color: var(--md-outline-variant) !important;
+}
+
+/* チェックボックス */
+label[data-baseweb="checkbox"] > span:first-child {
+    border-radius: 2px !important;
+    border-color: var(--md-on-surface-variant) !important;
+}
+label[data-baseweb="checkbox"]:has(input[aria-checked="true"]) > span:first-child {
+    background-color: var(--md-primary) !important;
+    border-color: var(--md-primary) !important;
+}
+
+/* ラジオボタン
+   外側の円の「背景色」が輪になり、内側の円がその穴になる構造。
+   未選択は内側が大きく（細い輪）、選択時は内側が小さくなる。 */
+label[data-baseweb="radio"] > div:first-child {
+    background-color: var(--md-on-surface-variant) !important;
+}
+label[data-baseweb="radio"]:has(input:checked) > div:first-child {
+    background-color: var(--md-primary) !important;
+}
+label[data-baseweb="radio"] > div:first-child > div {
+    background-color: var(--md-surface) !important;
+}
+
+/* 進捗バー（MD3 linear progress indicator）
+   構造：progressbar > 外枠 > 溝（track）> 進んだ部分（indicator） */
+[data-testid="stProgress"] [role="progressbar"] > div {
+    background: transparent !important;
+}
+[data-testid="stProgress"] [role="progressbar"] > div > div {
+    background: var(--md-secondary-container) !important;
+    height: 6px !important;
+    border-radius: var(--md-shape-full) !important;
+}
+[data-testid="stProgress"] [role="progressbar"] > div > div > div {
+    background: var(--md-primary) !important;
+    height: 6px !important;
+    border-radius: var(--md-shape-full) !important;
+}
+
+/* スピナー */
+[data-testid="stSpinner"] i {
+    border-top-color: var(--md-primary) !important;
+}
+
+
+/* =====================================================================
+   サイドバーの本文
+===================================================================== */
+/* st.text（前回の薬歴・お薬手帳）は既定で white-space: pre のため、
+   長文が1行になって横スクロールしないと読めない。折り返して表示する。 */
 [data-testid="stSidebar"] [data-testid="stText"] > div {
     white-space: pre-wrap !important;
     word-break: break-word !important;
@@ -273,18 +745,262 @@ h1 {
     line-height: 1.6 !important;
 }
 
-/* ==================================
+
+/* =====================================================================
+   独自部品（アプリ側で st.markdown から使う）
+===================================================================== */
+
+/* 画面タイトル下の補足（Body medium） */
+.md-supporting {
+    color: var(--md-on-surface-variant);
+    font-size: 0.9375rem;
+    line-height: 1.5rem;
+    margin: -0.25rem 0 1.25rem;
+}
+.md-center {
+    text-align: center;
+}
+
+/* ログイン画面：入力欄が横に伸びすぎないよう、本文の幅を狭めて中央に置く */
+[data-testid="stMainBlockContainer"]:has(.md-auth) {
+    max-width: 34rem !important;
+}
+
+/* 学習モード選択カードの中身 */
+.md-mode-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--md-shape-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+    font-family: 'Material Symbols Rounded';
+    font-size: 1.75rem;
+    line-height: 1;
+    font-feature-settings: 'liga';
+}
+.md-mode-icon.c-primary   { background: var(--md-primary-container);   color: var(--md-on-primary-container); }
+.md-mode-icon.c-secondary { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+.md-mode-icon.c-tertiary  { background: var(--md-tertiary-container);  color: var(--md-on-tertiary-container); }
+.md-mode-title {
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+    font-weight: 700;
+    color: var(--md-on-surface);
+}
+.md-mode-target {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--md-primary);
+    margin: 0.125rem 0 0.5rem;
+}
+.md-mode-desc {
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    color: var(--md-on-surface-variant);
+    min-height: 4.125rem;   /* 3行分：説明の長さが違ってもボタンの高さを揃える */
+    margin-bottom: 1rem;
+}
+
+/* 小さなラベル（MD3 assist chip 風） */
+.md-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    height: 2rem;
+    padding: 0 0.75rem;
+    border: 1px solid var(--md-outline-variant);
+    border-radius: var(--md-shape-sm);
+    color: var(--md-on-surface-variant);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    background: var(--md-surface-container-lowest);
+}
+
+/* 評価結果の要約 */
+.md-score {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.md-score-num {
+    font-size: 2.75rem;
+    line-height: 3.25rem;
+    font-weight: 700;
+    color: var(--md-on-surface);
+}
+.md-score-num.sm {
+    font-size: 1.75rem;
+    line-height: 2.25rem;
+}
+.md-score-den {
+    font-size: 1rem;
+    color: var(--md-on-surface-variant);
+}
+.md-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    height: 2rem;
+    padding: 0 0.75rem;
+    border-radius: var(--md-shape-sm);
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+.md-status .ms {
+    font-size: 1.125rem;
+}
+.md-status.ok {
+    background: var(--md-success-container);
+    color: var(--md-on-success-container);
+}
+.md-status.ng {
+    background: var(--md-error-container);
+    color: var(--md-on-error-container);
+}
+
+/* 評価の各項目（MD3 list） */
+.md-list {
+    margin: 0.25rem 0 0.5rem;
+}
+.md-list-item {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid var(--md-outline-variant);
+}
+.md-list-item:last-child {
+    border-bottom: none;
+}
+.md-list-item .ms {
+    font-size: 1.25rem;
+    line-height: 1.5rem;
+    flex: 0 0 auto;
+}
+.md-list-item .ms.ok  { color: var(--md-success); }
+.md-list-item .ms.ng  { color: var(--md-error); }
+.md-list-item .ms.tip { color: var(--md-tertiary); }
+.md-list-item .ms.warn { color: var(--md-warning); }
+.md-list-body {
+    flex: 1;
+    min-width: 0;
+    color: var(--md-on-surface);
+    line-height: 1.5rem;
+}
+.md-list-sub {
+    color: var(--md-on-surface-variant);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    margin-top: 0.125rem;
+}
+
+/* 模範解答：既存の発言と、AIが補った発言 */
+.md-transcript {
+    line-height: 1.8;
+    font-size: 0.9375rem;
+    color: var(--md-on-surface);
+}
+.md-transcript .line {
+    padding: 4px 0;
+}
+.md-transcript .added {
+    margin: 4px 0;
+    padding: 6px 12px;
+    border-left: 3px solid var(--md-primary);
+    border-radius: 0 var(--md-shape-sm) var(--md-shape-sm) 0;
+    background: var(--md-primary-container);
+    color: var(--md-on-primary-container);
+    font-weight: 500;
+}
+.md-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--md-on-surface-variant);
+}
+.md-legend .swatch {
+    width: 1rem;
+    height: 1rem;
+    border-radius: var(--md-shape-xs);
+    border-left: 3px solid var(--md-primary);
+    background: var(--md-primary-container);
+}
+
+/* Material Symbols を本文中で使うとき */
+.ms {
+    font-family: 'Material Symbols Rounded';
+    font-weight: normal;
+    font-style: normal;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: nowrap;
+    direction: ltr;
+    font-feature-settings: 'liga';
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+}
+
+
+/* =====================================================================
+   チュートリアルの強調枠
+   点滅・発光はやめ、primary の枠と淡い塗りで静かに示す。
+===================================================================== */
+.tutorial-highlight,
+.sidebar-highlight {
+    border: 2px solid var(--md-primary);
+    border-radius: var(--md-shape-md);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    background: color-mix(in srgb, var(--md-primary) 8%, transparent);
+    color: var(--md-on-surface);
+}
+.input-highlight {
+    border: 2px solid var(--md-tertiary);
+    border-radius: var(--md-shape-md);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    background: color-mix(in srgb, var(--md-tertiary) 8%, transparent);
+    color: var(--md-on-surface);
+}
+.tutorial-highlight .ms,
+.input-highlight .ms {
+    font-size: 1.125rem;
+    vertical-align: -0.2em;
+    margin-right: 0.25rem;
+}
+.tutorial-label {
+    display: inline-block;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--md-on-primary-container);
+    background: var(--md-primary-container);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--md-shape-sm);
+}
+.tutorial-arrow {
+    font-size: 1.25rem;
+    color: var(--md-primary);
+}
+
+
+/* =====================================================================
    処方内容：薬剤情報提供文書スタイル
-================================== */
+===================================================================== */
 .rx-doc {
-    font-size: 0.82rem;
+    font-size: 0.8125rem;
     line-height: 1.55;
+    color: var(--md-on-surface);
 }
 
 /* 説明文（「処方箋なし」など） */
 .rx-doc .rx-pre {
     font-size: 0.78rem;
-    opacity: 0.75;
+    color: var(--md-on-surface-variant);
     margin-bottom: 6px;
 }
 
@@ -293,10 +1009,10 @@ h1 {
     font-size: 0.76rem;
     font-weight: 700;
     letter-spacing: 0.03em;
-    opacity: 0.85;
+    color: var(--md-on-surface-variant);
     margin: 10px 0 4px;
     padding-left: 6px;
-    border-left: 3px solid rgba(167, 139, 250, 0.85);
+    border-left: 3px solid var(--md-primary);
 }
 .rx-doc .rx-sec:first-child {
     margin-top: 0;
@@ -304,111 +1020,114 @@ h1 {
 
 /* 薬剤1剤ぶんのカード */
 .rx-doc .rx-card {
-    border: 1px solid rgba(128, 128, 128, 0.28);
-    border-left: 3px solid #7c3aed;
-    border-radius: 10px;
-    padding: 8px 10px 6px;
+    border: 1px solid var(--md-outline-variant);
+    border-radius: var(--md-shape-md);
+    padding: 10px 12px 8px;
     margin-bottom: 8px;
-    background: rgba(128, 128, 128, 0.06);
+    background: var(--md-surface-container-low);
 }
 
 .rx-doc .rx-head {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 5px;
-    margin-bottom: 5px;
+    gap: 6px;
+    margin-bottom: 6px;
 }
 
 .rx-doc .rx-name {
     font-weight: 700;
-    font-size: 0.92rem;
-    text-decoration: none;
-    border-bottom: 1px dotted currentColor;
+    font-size: 0.9rem;
+    color: var(--md-primary) !important;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
 }
 .rx-doc .rx-name:hover {
-    opacity: 0.75;
+    text-decoration-thickness: 2px;
 }
 
-/* 処方区分バッジ */
+/* 処方区分バッジ（MD3 badge / 小さな tonal ラベル） */
 .rx-doc .rx-badge {
-    font-size: 0.62rem;
+    font-size: 0.6875rem;
     font-weight: 700;
-    padding: 1px 7px;
-    border-radius: 999px;
+    padding: 1px 8px;
+    border-radius: var(--md-shape-xs);
     white-space: nowrap;
-    color: #fff;
     letter-spacing: 0.02em;
 }
-.rx-doc .b-new  { background: #2563eb; }
-.rx-doc .b-add  { background: #059669; }
-.rx-doc .b-cont { background: rgba(128, 128, 128, 0.55); }
-.rx-doc .b-up   { background: #d97706; }
-.rx-doc .b-down { background: #0891b2; }
-.rx-doc .b-stop { background: #dc2626; }
+.rx-doc .b-new  { background: var(--md-primary-container);   color: var(--md-on-primary-container); }
+.rx-doc .b-add  { background: var(--md-success-container);   color: var(--md-on-success-container); }
+.rx-doc .b-cont { background: var(--md-surface-container-highest); color: var(--md-on-surface-variant); }
+.rx-doc .b-up   { background: var(--md-warning-container);   color: var(--md-on-warning-container); }
+.rx-doc .b-down { background: var(--md-tertiary-container);  color: var(--md-on-tertiary-container); }
+.rx-doc .b-stop { background: var(--md-error-container);     color: var(--md-on-error-container); }
 
 /* 「※5mgから減量」などの注記 */
 .rx-doc .rx-remark {
     font-size: 0.72rem;
-    opacity: 0.7;
+    color: var(--md-on-surface-variant);
     margin: -2px 0 4px;
 }
 
 /* 項目（用法・用量／この薬の作用と効果／注意事項／主な副作用）
    項目名をクリックすると内容が開く。項目名は内容の上に置く。 */
 .rx-doc .rx-item {
-    padding: 3px 0;
-    border-top: 1px dashed rgba(128, 128, 128, 0.3);
+    padding: 2px 0;
+    border-top: 1px solid var(--md-outline-variant);
 }
 
 /* 項目名（クリックで開閉するボタン） */
 .rx-doc .rx-k {
     display: flex;
     align-items: center;
-    gap: 5px;
-    font-size: 0.72rem;
+    gap: 4px;
+    font-size: 0.75rem;
     font-weight: 700;
-    opacity: 0.7;
-    padding: 3px 2px;
-    border-radius: 6px;
+    color: var(--md-on-surface-variant);
+    padding: 4px 4px;
+    border-radius: var(--md-shape-xs);
     cursor: pointer;
     user-select: none;
     list-style: none;
+    transition: background-color var(--md-dur) var(--md-ease);
 }
-/* ブラウザ既定の三角マーカーを消して、自前の▸▾に置き換える */
+/* ブラウザ既定の三角マーカーを消して、Material Symbols の矢印に置き換える */
 .rx-doc .rx-k::-webkit-details-marker {
     display: none;
 }
 .rx-doc .rx-k::before {
-    content: "▸";
-    font-size: 0.6rem;
-    opacity: 0.75;
+    content: "chevron_right";
+    font-family: 'Material Symbols Rounded';
+    font-size: 1rem;
+    line-height: 1;
+    font-weight: normal;
+    font-feature-settings: 'liga';
+    transition: transform var(--md-dur) var(--md-ease);
 }
 .rx-doc details[open] > .rx-k::before {
-    content: "▾";
+    transform: rotate(90deg);
 }
 .rx-doc .rx-k:hover {
-    opacity: 1;
-    background: rgba(124, 58, 237, 0.14);
+    background: color-mix(in srgb, var(--md-on-surface) 8%, transparent);
 }
 
 .rx-doc .rx-v {
-    padding: 2px 2px 5px 1.05em;
+    padding: 2px 4px 6px 1.25rem;
     word-break: break-word;
 }
 .rx-doc .rx-caution .rx-v {
-    color: #f87171;
+    color: var(--md-error);
 }
 
 /* 主な副作用 */
 .rx-doc .rx-side .rx-v {
-    color: #f0a0a0;
+    color: var(--md-error);
 }
 
 /* 注意事項の見出し（「次のような方は…」「生活上の注意」） */
 .rx-doc .rx-cap {
     font-weight: 700;
-    opacity: 0.9;
     margin: 4px 0 2px;
     line-height: 1.45;
 }
@@ -427,17 +1146,16 @@ h1 {
     content: "・";
     position: absolute;
     left: 0;
-    opacity: 0.6;
+    color: var(--md-on-surface-variant);
 }
 
 /* 全体の補足（■ 見出しや目標値など） */
 .rx-doc .rx-notes {
-    border: 1px dashed rgba(128, 128, 128, 0.38);
-    border-radius: 8px;
-    padding: 7px 9px;
+    border: 1px dashed var(--md-outline);
+    border-radius: var(--md-shape-sm);
+    padding: 8px 10px;
     font-size: 0.75rem;
     line-height: 1.65;
-    opacity: 0.92;
 }
 .rx-doc .rx-notes-head {
     font-weight: 700;
@@ -453,65 +1171,56 @@ h1 {
     word-break: break-word;
 }
 
-/* ----------------------------------
-   テキスト入力フィールド
----------------------------------- */
-[data-testid="textInput"] input,
-.stTextInput input {
-    border-radius: 12px !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    background: rgba(255, 255, 255, 0.05) !important;
-    transition: border-color 0.2s ease !important;
-    padding: 0.6rem 0.9rem !important;
-}
 
-[data-testid="textInput"] input:focus,
-.stTextInput input:focus {
-    border-color: #7c3aed !important;
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2) !important;
-}
-
-/* ----------------------------------
-   タブ
----------------------------------- */
-[data-testid="stTabs"] [role="tab"] {
-    border-radius: 10px 10px 0 0 !important;
-    font-weight: 600 !important;
-    padding: 0.5rem 1.5rem !important;
-}
-
-/* ----------------------------------
-   水平ライン
----------------------------------- */
-hr {
-    margin: 0.75rem 0 !important;
-    border-color: rgba(255, 255, 255, 0.1) !important;
-    opacity: 1 !important;
-}
-
-/* ----------------------------------
-   モバイル：Streamlit デフォルト
-   ヘッダーバーを透過
----------------------------------- */
-[data-testid="stHeader"] {
-    background: rgba(0, 0, 0, 0) !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
-}
-
-/* ----------------------------------
-   スクロールバーを細く
----------------------------------- */
+/* =====================================================================
+   スクロールバー
+===================================================================== */
 ::-webkit-scrollbar {
-    width: 4px !important;
-    height: 4px !important;
+    width: 8px;
+    height: 8px;
 }
-
 ::-webkit-scrollbar-track {
-    background: transparent !important;
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--md-outline-variant);
+    border-radius: var(--md-shape-full);
+    border: 2px solid transparent;
+    background-clip: content-box;
 }
 
-::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15) !important;
-    border-radius: 2px !important;
+
+/* =====================================================================
+   スマホ（〜768px）
+===================================================================== */
+@media screen and (max-width: 768px) {
+    .main .block-container,
+    [data-testid="stMainBlockContainer"] {
+        padding: 3rem 1rem 6rem !important;
+        max-width: 100% !important;
+    }
+
+    h1 {
+        font-size: 1.125rem !important;
+        line-height: 1.5rem !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    h2 {
+        font-size: 1.0625rem !important;
+        line-height: 1.5rem !important;
+    }
+    h3 {
+        font-size: 1rem !important;
+    }
+
+    /* 吹き出しはスマホでは幅を広めに */
+    [data-testid="stChatMessage"] [data-testid="stChatMessageContent"] {
+        max-width: 85% !important;
+    }
+
+    .md-mode-desc {
+        min-height: 0;
+    }
 }

@@ -12,6 +12,44 @@ import drug_info
 
 
 # ==========================================================
+# 評価結果などのリスト（MD3 list）
+# rows: [(Material Symbols名, 色クラス, 本文, 補足), ...]
+#   色クラス：ok（達成）/ ng（不足）/ warn（不十分）/ tip（助言）
+# 本文・補足はAIの出力なので必ずエスケープする。
+# ==========================================================
+def md_list(rows) -> str:
+    items = []
+    for icon, cls, main, sub in rows:
+        main = _html.escape(str(main).replace("**", ""))
+        sub_html = (
+            f'<div class="md-list-sub">{_html.escape(str(sub).replace("**", ""))}</div>'
+            if sub else ""
+        )
+        items.append(
+            f'<div class="md-list-item"><span class="ms {cls}">{icon}</span>'
+            f'<div class="md-list-body">{main}{sub_html}</div></div>'
+        )
+    return '<div class="md-list">' + "".join(items) + "</div>"
+
+
+def md_score(rate: float, achieved: int, total: int, passed: bool, small: bool = False) -> str:
+    """達成率の大きな数字と、達成／未達のチップ"""
+    if passed:
+        status = ('<span class="md-status ok"><span class="ms">check_circle</span>'
+                  '評価基準を達成</span>')
+    else:
+        status = ('<span class="md-status ng"><span class="ms">cancel</span>'
+                  '評価基準に未達</span>')
+    size = " sm" if small else ""
+    return (
+        f'<div class="md-score">'
+        f'<span class="md-score-num{size}">{rate * 100:.0f}%</span>'
+        f'<span class="md-score-den">{achieved} / {total} 項目を達成</span>'
+        f'</div>{status}'
+    )
+
+
+# ==========================================================
 # 日付テンプレート置換
 # {{TODAY}} / {{TODAY+3D}} / {{TODAY-1Y}} などを実際の日付に変換する
 # ==========================================================

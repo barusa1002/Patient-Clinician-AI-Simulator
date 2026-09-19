@@ -3,6 +3,7 @@ import streamlit as st
 import io
 import json
 import logging
+import html as _html
 from db import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -13,9 +14,10 @@ from evaluation import (
     save_evaluation,
     EVALUATION_CHECKLISTS,
 )
-from utils import strip_thought
+from utils import strip_thought, md_list as _md_list, md_score
 from llm import start_chat
 from config import MODEL_NAME
+
 
 
 # ==================================================
@@ -43,12 +45,12 @@ def _render_prescription_form():
     """疑義照会完了後の処方箋備考欄記入フォームを描画する"""
     from datetime import datetime as _dt
     st.markdown("---")
-    st.markdown("### 📋 処方箋 備考欄記載")
+    st.markdown("### 処方箋 備考欄記載")
     st.caption("疑義照会が完了しました。処方箋の備考欄に記載する内容を入力してください。")
 
     if st.session_state.get("prescription_submitted"):
         notes = st.session_state.get("prescription_notes", {})
-        st.success("✅ 備考欄を記録しました")
+        st.success("備考欄を記録しました", icon=":material/check_circle:")
         st.markdown(
             f"- **日時**：{notes.get('date_time', '（未記載）')}\n"
             f"- **照会方法**：{notes.get('method', '（未記載）')}\n"
@@ -56,7 +58,7 @@ def _render_prescription_form():
             f"- **照会先（医師名）**：{notes.get('doctor_name', '（未記載）')}\n"
             f"- **変更内容**：{notes.get('change_content', '（未記載）')}"
         )
-        if st.button("✏️ 編集する", key="prescription_redo"):
+        if st.button("編集する", key="prescription_redo", icon=":material/edit:"):
             st.session_state["prescription_submitted"] = False
             st.rerun()
         return
@@ -82,7 +84,7 @@ def _render_prescription_form():
         change_content = st.text_area("変更内容",
                                       value=notes.get("change_content", ""),
                                       placeholder="例：アムロジピン錠5mg　1日2回→1日1回朝食後に変更")
-        submitted = st.form_submit_button("📝 記録する")
+        submitted = st.form_submit_button("記録する", icon=":material/save:", type="primary")
 
         if submitted:
             st.session_state["prescription_notes"] = {
@@ -102,12 +104,12 @@ def _render_prescription_form():
 # ==================================================
 def _render_soap_form():
     st.markdown("---")
-    st.markdown("### 📝 SOAP薬歴入力")
+    st.markdown("### SOAP薬歴入力")
     st.caption("服薬指導が終わったら SOAP 形式で薬歴を記入してください。記入後にAI評価を実行すると薬歴も一緒に評価されます。")
 
     if st.session_state.get("soap_submitted"):
         notes = st.session_state.get("soap_notes", {})
-        st.success("✅ SOAP薬歴を記録しました")
+        st.success("SOAP薬歴を記録しました", icon=":material/check_circle:")
         col1, col2 = st.columns(2)
         with col1:
             st.markdown(f"**S（主観的情報）**\n\n{notes.get('S') or '（未記載）'}")
@@ -115,7 +117,7 @@ def _render_soap_form():
         with col2:
             st.markdown(f"**A（評価）**\n\n{notes.get('A') or '（未記載）'}")
             st.markdown(f"**P（計画）**\n\n{notes.get('P') or '（未記載）'}")
-        if st.button("✏️ 編集する", key="soap_redo"):
+        if st.button("編集する", key="soap_redo", icon=":material/edit:"):
             st.session_state["soap_submitted"] = False
             st.rerun()
         return
@@ -148,7 +150,7 @@ def _render_soap_form():
             placeholder="指導内容・次回フォロー計画など",
             height=80,
         )
-        if st.form_submit_button("📝 記録する"):
+        if st.form_submit_button("記録する", icon=":material/save:", type="primary"):
             st.session_state["soap_notes"] = {"S": s, "O": o, "A": a, "P": p}
             st.session_state["soap_submitted"] = True
             st.rerun()
@@ -165,40 +167,14 @@ def render_chat_page(
     IS_MOBILE = st.session_state.get("is_mobile", False)
 
     # ==================================================
-    # タイトル（モバイル対応：コンパクトバッジ形式）
+    # 画面見出し：課題名（Title large）＋サブシナリオ（補足）
+    # 文字の大きさはスマホ用に CSS 側で切り替える
     # ==================================================
-    if IS_MOBILE:
-        st.markdown(
-            f"""
-            <div style="
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                background: rgba(124,58,237,0.15);
-                border: 1px solid rgba(124,58,237,0.3);
-                border-radius: 20px;
-                padding: 4px 14px;
-                margin-bottom: 8px;
-                max-width: 100%;
-                overflow: hidden;
-            ">
-                <span style="font-size:0.75rem; color:#a78bfa; font-weight:600;
-                             white-space:nowrap; overflow:hidden;
-                             text-overflow:ellipsis;">
-                    📋 {scenario}
-                </span>
-                <span style="color:rgba(255,255,255,0.3); font-size:0.7rem;">｜</span>
-                <span style="font-size:0.75rem; color:#93c5fd; font-weight:600;
-                             white-space:nowrap; overflow:hidden;
-                             text-overflow:ellipsis;">
-                    {subscenario}
-                </span>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    else:
-        st.header(f"{scenario}｜{subscenario}")
+    st.markdown(f"## {scenario}")
+    st.markdown(
+        f'<p class="md-supporting">{_html.escape(subscenario)}</p>',
+        unsafe_allow_html=True,
+    )
 
     # ==================================================
     # チャット履歴表示
@@ -236,7 +212,7 @@ def render_chat_page(
 
             if role == "assistant" and IS_MOBILE:
 
-                if st.button("▶ 音声再生", key=f"history_play_{i}"):
+                if st.button("音声再生", key=f"history_play_{i}", icon=":material/volume_up:"):
 
                     audio_bytes = speak_text(msg)
 
@@ -293,9 +269,9 @@ def render_chat_page(
         # モバイル：小さいボタンを左端に配置
         hint_col, _ = st.columns([2, 5])
         with hint_col:
-            hint_clicked = st.button("💡 ヒント", disabled=not has_history, key="hint_btn")
+            hint_clicked = st.button("ヒント", disabled=not has_history, key="hint_btn", icon=":material/lightbulb:")
     else:
-        hint_clicked = st.button("💡 ヒントを見る", disabled=not has_history, key="hint_btn")
+        hint_clicked = st.button("ヒントを見る", disabled=not has_history, key="hint_btn", icon=":material/lightbulb:")
     if hint_clicked:
         # 評価時と同じ優先順位（サブシナリオ別→シナリオ別）でチェックリストを取得
         sub_key = f"{scenario}|{subscenario}"
@@ -341,7 +317,7 @@ def render_chat_page(
             st.session_state["hint_text"] = "ヒントの生成に失敗しました。"
 
     if st.session_state.get("hint_text"):
-        st.info(st.session_state["hint_text"])
+        st.info(st.session_state["hint_text"], icon=":material/lightbulb:")
 
     # ==================================================
     # 疑義照会：処方箋備考欄フォーム
@@ -356,7 +332,7 @@ def render_chat_page(
     _is_soap_target = _learning_mode == "スキルアップモード" and mode in ("薬局実習", "病院実習")
     if _is_soap_target and has_history:
         if not st.session_state.get("show_soap_form") and not st.session_state.get("soap_submitted"):
-            if st.button("📝 SOAP薬歴を記入する", key="soap_open_btn"):
+            if st.button("SOAP薬歴を記入する", key="soap_open_btn", icon=":material/edit_note:"):
                 st.session_state["show_soap_form"] = True
                 st.rerun()
         if st.session_state.get("show_soap_form") or st.session_state.get("soap_submitted"):
@@ -464,103 +440,90 @@ def render_chat_page(
         # =============================
         # 表示
         # =============================
-        st.markdown("## 📊 評価結果")
+        st.markdown("## 評価結果")
 
-        st.write(f"達成率：{achieved}/{total}（{rate*100:.1f}%）")
+        # 要約カード：達成率・判定・進捗バー
+        with st.container(border=True):
+            st.markdown(md_score(rate, achieved, total, passed), unsafe_allow_html=True)
+            st.progress(rate)
+            st.caption("達成率 70% 以上で評価基準達成です。")
 
-        if passed:
-            st.success("🎉 評価基準達成")
-        else:
-            st.error("❌ 評価基準未達")
-
-        st.markdown("---")
-
-        # ==================================================
-        # 1️⃣ 達成できた項目
-        # ==================================================
-        st.markdown("## ① 達成できた項目")
-
+        # 達成できた項目
+        st.markdown("### 達成できた項目")
         achieved_items = evaluation_json.get("achieved", [])
-
         if achieved_items:
-            for item in achieved_items:
-                st.markdown(f"- {item}")
+            st.markdown(
+                _md_list([("check_circle", "ok", item, "") for item in achieved_items]),
+                unsafe_allow_html=True,
+            )
         else:
-            st.markdown("（該当なし）")
+            st.caption("該当なし")
 
-        st.markdown("---")
-
-        # ==================================================
-        # 2️⃣ 不足・不十分な項目
-        # ==================================================
-        st.markdown("## ② 不足・不十分な項目")
-
+        # 不足・不十分な項目
+        st.markdown("### 不足・不十分な項目")
         missing_items = evaluation_json.get("missing", [])
-
         if missing_items:
+            rows = []
             for m in missing_items:
                 if isinstance(m, dict):
-                    st.markdown(f"**{m.get('item', '不明')}**")
-                    st.markdown(f"- 理由：{m.get('reason', '')}")
+                    reason = m.get("reason", "")
+                    rows.append(("error", "ng", m.get("item", "不明"),
+                                 f"理由：{reason}" if reason else ""))
                 else:
-                    st.markdown(f"**{m}**")
-                st.markdown("")
+                    rows.append(("error", "ng", m, ""))
+            st.markdown(_md_list(rows), unsafe_allow_html=True)
         else:
-            st.markdown("（該当なし）")
+            st.caption("該当なし")
 
-        st.markdown("---")
-
-        # ==================================================
-        # 3️⃣ 改善アドバイス
-        # ==================================================
-        st.markdown("## ③ 改善アドバイス")
-
+        # 改善アドバイス
+        st.markdown("### 改善アドバイス")
         advice_list = evaluation_json.get("advice", [])
-
         if advice_list:
-            for adv in advice_list:
-                st.markdown(f"- {adv}")
+            st.markdown(
+                _md_list([("lightbulb", "tip", adv, "") for adv in advice_list]),
+                unsafe_allow_html=True,
+            )
         else:
-            st.markdown("（アドバイスなし）")
+            st.caption("アドバイスなし")
 
-        st.markdown("---")
-
-        # ==================================================
-        # 4️⃣ 総合評価
-        # ==================================================
-        st.markdown("## ④ 総合評価")
-
+        # 総合評価
+        st.markdown("### 総合評価")
         if "comment" in evaluation_json:
             st.markdown(evaluation_json["comment"])
         else:
-            st.markdown("（総合評価なし）")
+            st.caption("総合評価なし")
 
-        # ==================================================
-        # ⑤ SOAP薬歴評価（提出した場合のみ）
-        # ==================================================
+        # SOAP薬歴評価（提出した場合のみ）
         soap_eval = evaluation_json.get("soap")
         if soap_eval:
-            st.markdown("---")
-            st.markdown("## ⑤ SOAP薬歴評価")
+            st.markdown("### SOAP薬歴評価")
 
-            _score_label = {0: "🔴 未記載/誤り", 1: "🟡 不十分", 2: "🟢 十分"}
+            score_view = {
+                0: ("cancel", "ng", "未記載・誤り"),
+                1: ("error", "warn", "不十分"),
+                2: ("check_circle", "ok", "十分"),
+            }
+            label_map = {
+                "S": "S（主観的情報）",
+                "O": "O（客観的情報）",
+                "A": "A（評価）",
+                "P": "P（計画）",
+            }
+            rows = []
             for section in ["S", "O", "A", "P"]:
                 sec_data = soap_eval.get(section, {})
-                score = sec_data.get("score", 0)
-                comment = sec_data.get("comment", "")
-                label_map = {
-                    "S": "S（主観的情報）",
-                    "O": "O（客観的情報）",
-                    "A": "A（評価）",
-                    "P": "P（計画）",
-                }
-                st.markdown(f"**{label_map[section]}** {_score_label.get(score, str(score))}点")
-                if comment:
-                    st.caption(comment)
+                try:
+                    score = int(sec_data.get("score", 0))
+                except (TypeError, ValueError):
+                    score = 0
+                icon, cls, word = score_view.get(score, ("help", "", str(score)))
+                rows.append((icon, cls, f"{label_map[section]}　{word}（{score}点）",
+                             sec_data.get("comment", "")))
+            st.markdown(_md_list(rows), unsafe_allow_html=True)
 
             overall = soap_eval.get("overall", "")
             if overall:
-                st.info(f"**SOAP総合**：{overall}")
+                st.info(f"**SOAP総合**：{overall}", icon=":material/assignment:")
 
         st.session_state.run_evaluation = False
         st.session_state["evaluation_done"] = True
@@ -589,7 +552,8 @@ def render_chat_page(
                 now_label = _dt.now().strftime("%Y%m%d_%H%M")
                 filename = f"評価レポート_{scenario}_{now_label}.pdf"
                 st.download_button(
-                    label="📄 評価レポートをPDFで保存",
+                    label="評価レポートをPDFで保存",
+                    icon=":material/picture_as_pdf:",
                     data=pdf_bytes,
                     file_name=filename,
                     mime="application/pdf",
@@ -598,7 +562,7 @@ def render_chat_page(
             except Exception as e:
                 st.warning(f"PDF生成に失敗しました：{e}")
 
-        if st.button("📖 模範解答を見る"):
+        if st.button("模範解答を見る", icon=":material/auto_stories:"):
             import re as _re
 
             last_eval = st.session_state.get("last_evaluation_json", {})
@@ -668,7 +632,7 @@ def render_chat_page(
         if st.session_state.get("model_answer_text"):
             import re as _re
 
-            with st.expander("📖 模範的な会話例（補完版）を見る", expanded=True):
+            with st.expander("模範的な会話例（補完版）", expanded=True, icon=":material/forum:"):
                 raw_text = st.session_state["model_answer_text"]
 
                 # [補完]...[/補完] ブロックで分割
@@ -684,17 +648,7 @@ def render_chat_page(
                         ]
                         for line in inner_lines:
                             safe = line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-                            html_parts.append(
-                                f'<div style="'
-                                f'color: #60a5fa; '
-                                f'background: rgba(96,165,250,0.13); '
-                                f'border-left: 3px solid #60a5fa; '
-                                f'padding: 6px 10px; '
-                                f'border-radius: 0 8px 8px 0; '
-                                f'margin: 4px 0; '
-                                f'font-weight: 500;'
-                                f'">✦ {safe}</div>'
-                            )
+                            html_parts.append(f'<div class="added">{safe}</div>')
                     else:
                         # 既存発言：通常表示
                         for line in seg.splitlines():
@@ -704,22 +658,17 @@ def render_chat_page(
                             # 念のため残留タグを除去
                             clean = _re.sub(r'\[/?補完\]', '', line)
                             safe = clean.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-                            html_parts.append(
-                                f'<div style="padding: 4px 0; margin: 2px 0;">{safe}</div>'
-                            )
+                            html_parts.append(f'<div class="line">{safe}</div>')
 
                 st.markdown(
-                    '<div style="line-height: 1.9; font-size: 0.93rem;">'
-                    + "".join(html_parts)
-                    + "</div>",
+                    '<div class="md-transcript">' + "".join(html_parts) + "</div>",
                     unsafe_allow_html=True,
                 )
 
                 # 凡例
                 st.markdown(
-                    '<div style="margin-top: 10px; font-size: 0.78rem; '
-                    'color: rgba(255,255,255,0.45);">'
-                    "✦ 青色ハイライト：AIによって補完された発言</div>",
+                    '<div class="md-legend"><span class="swatch"></span>'
+                    "色の付いた発言：足りなかった部分をAIが補った発言</div>",
                     unsafe_allow_html=True,
                 )
 

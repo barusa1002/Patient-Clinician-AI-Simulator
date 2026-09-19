@@ -7,6 +7,8 @@ import matplotlib.font_manager as fm
 import os
 from datetime import datetime, timedelta, timezone
 
+from utils import md_list, md_score
+
 _JST = timezone(timedelta(hours=9))
 
 
@@ -19,7 +21,7 @@ def get_font_prop():
     if os.path.exists(font_path):
         return fm.FontProperties(fname=font_path)
     else:
-        st.warning("⚠ 日本語フォントが見つかりません")
+        st.warning("日本語フォントが見つかりません", icon=":material/warning:")
         return None
 
 
@@ -271,34 +273,38 @@ def render_evaluation_history(histories, show_detail=True):
             timestamp = "日時不明"
         scenario = str(h.get("scenario", "")).strip()
 
-        with st.expander(f"{timestamp}｜{scenario}"):
+        with st.expander(
+            f"{timestamp}｜{scenario}",
+            icon=":material/check_circle:" if passed else ":material/cancel:",
+        ):
 
-            st.write(f"達成率：{achieved}/{total}（{rate*100:.1f}%）")
+            st.markdown(md_score(rate, achieved, total, passed, small=True),
+                        unsafe_allow_html=True)
+            st.progress(rate)
 
-            if passed:
-                st.success("🎉 合格")
+            st.markdown("#### 達成項目")
+            achieved_items = evaluation.get("achieved", [])
+            if achieved_items:
+                st.markdown(md_list([("check_circle", "ok", i, "") for i in achieved_items]),
+                            unsafe_allow_html=True)
             else:
-                st.error("❌ 不合格")
+                st.caption("該当なし")
 
-            st.markdown("### ✅ 達成項目")
-            for item in evaluation.get("achieved", []):
-                st.markdown(f"- {item}")
-
-            st.markdown("### ⚠ 不足項目")
-            for m in evaluation.get("missing", []):
-                if isinstance(m, dict):
-                    item = m.get("item", "不明")
-                else:
-                    item = str(m)
-                st.markdown(f"- {item}")
+            st.markdown("#### 不足項目")
+            missing_rows = [
+                ("error", "ng", m.get("item", "不明") if isinstance(m, dict) else m, "")
+                for m in evaluation.get("missing", [])
+            ]
+            if missing_rows:
+                st.markdown(md_list(missing_rows), unsafe_allow_html=True)
+            else:
+                st.caption("該当なし")
 
             if show_detail:
-                st.markdown("### 🧪 各評価項目")
-
-                for item, val in scores.items():
-                    if val == 1:
-                        st.markdown(f"🟢 {item}")
-                    elif val == 0:
-                        st.markdown(f"🔴 {item}")
-                    else:
-                        st.markdown(f"⚪ {item}")
+                st.markdown("#### 各評価項目")
+                view = {1: ("check_circle", "ok"), 0: ("cancel", "ng")}
+                st.markdown(
+                    md_list([(*view.get(val, ("remove", "")), item, "")
+                             for item, val in scores.items()]),
+                    unsafe_allow_html=True,
+                )

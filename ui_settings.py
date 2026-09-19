@@ -11,7 +11,7 @@ from ui_evaluation_viewer import (
 
 def render_settings_page():
 
-    st.header("⚙️ ユーザー設定")
+    st.header("ユーザー設定")
 
     user = get_current_user()
 
@@ -25,13 +25,13 @@ def render_settings_page():
     # ===============================
     # アカウント情報
     # ===============================
-    st.subheader("👤 アカウント情報")
+    st.subheader("アカウント情報")
     st.markdown(f"**メールアドレス**： `{email}`")
 
     # ===============================
     # パスワード変更（Auth版）
     # ===============================
-    st.subheader("🔐 パスワード変更")
+    st.subheader("パスワード変更")
 
     new_password1 = st.text_input("新しいパスワード", type="password", key="settings_new_pass1")
     new_password2 = st.text_input("新しいパスワード（確認）", type="password", key="settings_new_pass2")
@@ -57,7 +57,7 @@ def render_settings_page():
     # 音声設定
     # ===============================
     st.markdown("---")
-    st.subheader("🔊 音声設定")
+    st.subheader("音声設定")
 
     st.session_state.autoplay_enabled = st.checkbox(
         "音声を自動再生する",
@@ -87,7 +87,7 @@ def render_settings_page():
     radar_categories = [s for ss in _SCENARIOS.values() for s in ss]
     n_tasks = len(radar_categories)
 
-    st.markdown(f"## 📊 {n_tasks}課題の達成率（{learning_mode}）")
+    st.markdown(f"## {n_tasks}課題の達成率（{learning_mode}）")
 
     mode = st.radio(
         "表示方法",
@@ -103,7 +103,7 @@ def render_settings_page():
     # 評価履歴
     # ===============================
     st.markdown("---")
-    st.subheader("📚 評価履歴")
+    st.subheader("評価履歴")
 
     render_evaluation_history(evaluations, show_detail=True)
 
@@ -116,7 +116,7 @@ def render_settings_page():
 
     st.write("チュートリアルをもう一度確認できます。")
 
-    if st.button("📘 チュートリアルを見る"):
+    if st.button("チュートリアルを見る", icon=":material/school:"):
         st.session_state.show_tutorial = True
         st.session_state.tutorial_step = 0
         st.session_state.page = "chat"
@@ -127,6 +127,6 @@ def render_settings_page():
     # ===============================
     st.markdown("---")
 
-    if st.button("💬 チャット画面に戻る"):
+    if st.button("チャット画面に戻る", icon=":material/arrow_back:"):
         st.session_state.page = "chat"
         st.rerun()

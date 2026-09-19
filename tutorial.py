@@ -76,13 +76,6 @@ def _render_header(step: int):
     st.subheader(f"チュートリアル（{step + 1} / {TOTAL_STEPS}） ── {STEP_TITLES[step]}")
     st.progress((step + 1) / TOTAL_STEPS)
 
-    # ステップドット（●が現在地より前後、番号が見た目でも分かるように）
-    dots = " ".join(
-        "🟣" if i == step else ("✅" if i < step else "⚪")
-        for i in range(TOTAL_STEPS)
-    )
-    st.caption(dots)
-
 
 def _render_nav(show_prev=True, next_label="次へ →", on_next=next_step, show_skip=False):
     """前へ／次へ（／スキップ）のボタン行"""
@@ -142,7 +135,7 @@ def run_tutorial() -> bool:
         if step == 0:
 
             st.markdown("""
-### 👋 ようこそ
+### ようこそ
 
 このアプリは、**薬剤師として患者さんや医療スタッフと話す練習**を
 AI相手に何度でもできるシミュレーターです。
@@ -154,7 +147,8 @@ AI相手に何度でもできるシミュレーターです。
 この3ステップを、**実際の画面を見ながら約2分**で確認していきましょう。
 """)
 
-            st.info("次へ →　を押して進めてください。下の「スキップして始める」でいつでも中断できます。")
+            st.info("「はじめる →」を押して進めてください。「スキップして始める」でいつでも中断できます。",
+                    icon=":material/info:")
 
             _render_nav(show_prev=False, next_label="はじめる →")
 
@@ -163,12 +157,12 @@ AI相手に何度でもできるシミュレーターです。
         # =========================
         elif step == 1:
 
-            st.markdown("### 📋 まずは練習したい課題（シナリオ）を選びます")
+            st.markdown("### まずは練習したい課題（シナリオ）を選びます")
 
             st.markdown(
                 """
 <div class="tutorial-highlight">
-👈 画面左のサイドバーで、上から順に選んでいきます
+<span class="ms">arrow_back</span> 画面左のサイドバーで、上から順に選んでいきます
 </div>
 """,
                 unsafe_allow_html=True
@@ -184,15 +178,15 @@ AI相手に何度でもできるシミュレーターです。
 **③ サブシナリオ**　─　同じ課題の中での状況違い（初診／再診 など）
 """)
 
-            st.markdown("選ぶと、画面上部に次の情報が自動で表示されます。")
+            st.markdown("選ぶと、サイドバーの「課題詳細」に次の情報が表示されます。")
 
             c1, c2 = st.columns(2)
             with c1:
-                st.markdown("📘 **課題内容**\n\nこの練習で何をすべきか")
-                st.markdown("👤 **患者情報**\n\n年齢・症状など")
+                st.markdown("**課題内容**\n\nこの練習で何をすべきか")
+                st.markdown("**患者情報**\n\n年齢・症状など")
             with c2:
-                st.markdown("🧑‍⚕️ **あなたの役割**\n\n実習生／薬剤師など")
-                st.markdown("💊 **処方内容**\n\n処方されている薬")
+                st.markdown("**医療従事者情報**\n\nあなたの役割（実習生／薬剤師など）")
+                st.markdown("**処方内容**\n\n処方されている薬（薬品名から添付文書も開けます）")
 
             st.success("これらを読んでから会話を始めると、スムーズに練習できます。")
 
@@ -203,12 +197,12 @@ AI相手に何度でもできるシミュレーターです。
         # =========================
         elif step == 2:
 
-            st.markdown("### 💬 会話を始めましょう")
+            st.markdown("### 会話を始めましょう")
 
             st.markdown(
                 """
 <div class="input-highlight">
-👇 画面下の入力欄に話しかけたい内容を入力します
+<span class="ms">arrow_downward</span> 画面下の入力欄に話しかけたい内容を入力します
 </div>
 """,
                 unsafe_allow_html=True
@@ -226,7 +220,7 @@ AI相手に何度でもできるシミュレーターです。
 |---|---|
 | Windows 10/11 | `Win + H` キーで音声入力 |
 | Mac | `Fn` キーを2回 |
-| スマートフォン | キーボードのマイクボタン 🎤 |
+| スマートフォン | キーボードのマイクボタン |
 """)
 
             st.success("最初は困ったら『ヒントを見る』ボタンも使えます（会話画面に表示されています）。")
@@ -238,7 +232,7 @@ AI相手に何度でもできるシミュレーターです。
         # =========================
         elif step == 3:
 
-            st.markdown("### 🔁 会話を続けて、必要な情報を集めます")
+            st.markdown("### 会話を続けて、必要な情報を集めます")
 
             st.markdown("""
 患者さん（AI）に質問を重ねて、症状や困りごとを聞き出していきましょう。
@@ -256,7 +250,7 @@ AI相手に何度でもできるシミュレーターです。
             st.markdown(
                 """
 <div class="tutorial-highlight">
-👈 会話をやり直したいときは、サイドバーの「セッションをリセット」を押します
+<span class="ms">arrow_back</span> 会話をやり直したいときは、サイドバーの「セッションをリセット」を押します
 </div>
 """,
                 unsafe_allow_html=True
@@ -271,12 +265,12 @@ AI相手に何度でもできるシミュレーターです。
         # =========================
         elif step == 4:
 
-            st.markdown("### 📝 会話が終わったらAIに評価してもらいましょう")
+            st.markdown("### 会話が終わったらAIに評価してもらいましょう")
 
             st.markdown(
                 """
 <div class="tutorial-highlight">
-👈 サイドバーの「AIによる評価を実行」ボタンを押します
+<span class="ms">arrow_back</span> サイドバーの「AIによる評価を実行」ボタンを押します
 </div>
 """,
                 unsafe_allow_html=True
@@ -287,15 +281,15 @@ AI相手に何度でもできるシミュレーターです。
             c1, c2 = st.columns(2)
             with c1:
                 st.markdown("""
-✅ **達成率・合格判定**
+:material/check_circle: **達成率・合格判定**
 
 達成できた項目
 """)
             with c2:
                 st.markdown("""
-⚠️ 不足・不十分だった項目
+:material/error: 不足・不十分だった項目
 
-💡 次回への改善アドバイス
+:material/lightbulb: 次回への改善アドバイス
 """)
 
             st.success("「模範解答」も確認できるので、自分の会話と見比べて次回に活かしましょう。")
@@ -307,12 +301,12 @@ AI相手に何度でもできるシミュレーターです。
         # =========================
         elif step == 5:
 
-            st.markdown("### ⚙️ 最後に、その他の便利機能です")
+            st.markdown("### 最後に、その他の便利機能です")
 
             st.markdown(
                 """
 <div class="tutorial-highlight">
-👈 サイドバー下部の「ユーザー設定」からアクセスできます
+<span class="ms">arrow_back</span> サイドバー下部の「ユーザー設定」からアクセスできます
 </div>
 """,
                 unsafe_allow_html=True
@@ -320,18 +314,18 @@ AI相手に何度でもできるシミュレーターです。
 
             c1, c2, c3 = st.columns(3)
             with c1:
-                st.markdown("🔑 **ID・パスワード**\n\nログイン情報の変更")
+                st.markdown(":material/key: **ID・パスワード**\n\nログイン情報の変更")
             with c2:
-                st.markdown("🔊 **音声設定**\n\n読み上げ・音声入力のON/OFF")
+                st.markdown(":material/volume_up: **音声設定**\n\n読み上げ・音声入力のON/OFF")
             with c3:
-                st.markdown("📊 **評価履歴**\n\nスコア・レーダーチャート・過去のAIフィードバック")
+                st.markdown(":material/monitoring: **評価履歴**\n\nスコア・レーダーチャート・過去のAIフィードバック")
 
             st.markdown("---")
             st.markdown("""
-### 🎉 これでチュートリアルは終わりです
+### これでチュートリアルは終わりです
 
 「チュートリアル終了」を押すと練習画面に戻ります。
-このチュートリアルは、サイドバーの **⚙️ 設定 → ユーザー設定** から
+このチュートリアルは、サイドバーの **設定 → ユーザー設定** から
 いつでも再表示できます。
 """)
 
@@ -340,7 +334,7 @@ AI相手に何度でもできるシミュレーターです。
             with col1:
                 st.button("← 前へ", on_click=prev_step, use_container_width=True)
             with col2:
-                st.button("チュートリアル終了 ✓", on_click=finish_tutorial,
+                st.button("チュートリアルを終了", on_click=finish_tutorial, icon=":material/check:",
                            use_container_width=True, type="primary")
 
     return True

@@ -167,7 +167,7 @@ def render_comparison_chart(selected_emails, student_options, grouped_data):
 # ===============================
 def render_staff_dashboard():
 
-    st.title("👨‍🏫 教員ダッシュボード")
+    st.title("教員ダッシュボード")
 
     # ===============================
     # 権限チェック
@@ -198,10 +198,10 @@ def render_staff_dashboard():
     # ===============================
     # 学生比較グラフ
     # ===============================
-    st.markdown("## 📊 学生比較グラフ")
+    st.markdown("## 学生比較グラフ")
 
     selected_emails = st.multiselect(
-        "👥 比較する学生を選択（2人以上）",
+        "比較する学生を選択（2人以上）",
         list(student_options.keys())
     )
 
@@ -213,7 +213,7 @@ def render_staff_dashboard():
     st.markdown("---")
 
     selected_label = st.selectbox(
-        "👤 学生を選択",
+        "学生を選択",
         list(student_options.keys())
     )
 
@@ -223,7 +223,7 @@ def render_staff_dashboard():
     # ===============================
     # フィルタUI
     # ===============================
-    st.markdown("### 🔍 絞り込み")
+    st.markdown("### 絞り込み")
 
     # 日付
     dates = [
@@ -233,7 +233,7 @@ def render_staff_dashboard():
     unique_dates = sorted(list(set(dates)))
 
     selected_date = st.selectbox(
-        "📅 日付",
+        "日付",
         ["すべて"] + unique_dates
     )
 
@@ -245,7 +245,7 @@ def render_staff_dashboard():
     unique_scenarios = sorted(list(set(scenarios)))
 
     selected_scenario = st.selectbox(
-        "📘 シナリオ",
+        "シナリオ",
         ["すべて"] + unique_scenarios
     )
 
@@ -263,7 +263,7 @@ def render_staff_dashboard():
     # ===============================
     # レーダーチャート
     # ===============================
-    st.markdown("## 📊 レーダーチャート")
+    st.markdown("## レーダーチャート")
 
     mode = st.radio(
         "表示方法",
@@ -276,7 +276,7 @@ def render_staff_dashboard():
     # ===============================
     # 評価履歴
     # ===============================
-    st.markdown("## 📚 評価履歴")
+    st.markdown("## 評価履歴")
 
     render_evaluation_history(
         evaluations,
@@ -288,6 +288,6 @@ def render_staff_dashboard():
     # ===============================
     st.markdown("---")
 
-    if st.button("💬 チャット画面に戻る"):
+    if st.button("チャット画面に戻る", icon=":material/arrow_back:"):
         st.session_state.page = "chat"
         st.rerun()

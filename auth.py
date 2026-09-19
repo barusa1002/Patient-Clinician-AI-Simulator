@@ -104,12 +104,12 @@ def show_reset_password_form(access_token, refresh_token):
     col1, col2, col3 = st.columns([1, 8, 1])
     with col2:
         st.image("images/logo.png", width=800)
-        st.subheader("🔑 新しいパスワードを設定")
+        st.subheader("新しいパスワードを設定")
 
         new_pass1 = st.text_input("新しいパスワード", type="password", key="new_pass1")
         new_pass2 = st.text_input("新しいパスワード（確認）", type="password", key="new_pass2")
 
-        if st.button("パスワードを更新", key="update_pass_btn"):
+        if st.button("パスワードを更新", key="update_pass_btn", type="primary"):
             if not new_pass1:
                 st.error("パスワードを入力してください")
             elif not is_valid_password(new_pass1):
@@ -177,26 +177,14 @@ def login_screen():
         st.warning("一定時間操作がなかったためログアウトしました。再度ログインしてください。")
 
     # ロゴ・キャッチコピー
-    col1, col2, col3 = st.columns([1, 6, 1])
-    with col2:
-        st.image("images/logo.png", use_container_width=True)
-
+    # この画面だけ本文の幅を狭めて中央に置く（highlight.css の .md-auth）
+    st.markdown('<div class="md-auth"></div>', unsafe_allow_html=True)
+    st.image("images/logo.png", use_container_width=True)
     st.markdown(
-        """
-        <div style="text-align:center; margin:-0.5rem 0 1rem;">
-            <span style="
-                display:inline-block;
-                background: linear-gradient(135deg,#7c3aed,#2563eb);
-                color:white;
-                font-size:0.78rem;
-                font-weight:700;
-                letter-spacing:0.08em;
-                padding:4px 16px;
-                border-radius:20px;
-            ">💊 患者・医療従事者 AI シミュレーター</span>
-        </div>
-        """,
-        unsafe_allow_html=True
+        '<p class="md-supporting md-center">'
+        '患者・医療従事者役のAIを相手に、服薬指導や疑義照会を何度でも練習できます'
+        '</p>',
+        unsafe_allow_html=True,
     )
 
     tab_login, tab_register = st.tabs(["ログイン", "新規登録"])
@@ -209,7 +197,8 @@ def login_screen():
         email = st.text_input("メールアドレス", key="login_email")
         password = st.text_input("パスワード", type="password", key="login_pass")
 
-        if st.button("ログイン", key="login_btn"):
+        if st.button("ログイン", key="login_btn", type="primary", icon=":material/login:",
+                     use_container_width=True):
 
             if not email:
                 st.error("メールアドレスを入力してください")
@@ -248,7 +237,7 @@ def login_screen():
 
         with st.expander("パスワードをお忘れの方はこちら"):
             reset_email = st.text_input("登録済みのメールアドレス", key="reset_email")
-            if st.button("パスワード再設定メールを送信", key="reset_btn"):
+            if st.button("パスワード再設定メールを送信", key="reset_btn", icon=":material/send:"):
                 if not reset_email:
                     st.error("メールアドレスを入力してください")
                 elif not is_valid_email(reset_email):
@@ -271,14 +260,15 @@ def login_screen():
 
         st.markdown("""
 ---
-### 📄 研究利用について
+### 研究利用について
 本アプリの利用データは教育・研究目的で使用される場合があります。  
 個人を特定する情報は収集されません。
 """)
 
         consent = st.checkbox("上記内容を理解し、研究利用に同意します", key="consent")
 
-        if st.button("登録", key="register_btn"):
+        if st.button("登録", key="register_btn", type="primary", icon=":material/person_add:",
+                     use_container_width=True):
 
             if not new_email:
                 st.error("メールアドレスを入力してください")
@@ -310,27 +300,27 @@ def login_screen():
     # ---------------------------
     st.markdown("---")
     st.markdown(
-        "<div style='text-align:center; color:#9CA3AF; font-size:0.9rem;'>登録なしでお試しいただけます</div>",
-        unsafe_allow_html=True
+        '<p class="md-supporting md-center">登録なしでお試しいただけます</p>',
+        unsafe_allow_html=True,
     )
-    col_g1, col_g2, col_g3 = st.columns([1, 2, 1])
-    with col_g2:
-        if st.button("👥 ゲストとして試す", key="guest_btn", use_container_width=True):
-            st.session_state.guest_mode = True
-            st.rerun()
+    if st.button("ゲストとして試す", key="guest_btn", icon=":material/arrow_forward:",
+                 use_container_width=True):
+        st.session_state.guest_mode = True
+        st.rerun()
 
     # ---------------------------
     # お知らせ
     # ---------------------------
     st.markdown("---")
-    st.subheader("📢 お知らせ")
+    st.subheader("お知らせ")
 
     st.info(
         """
-・このアプリは **患者・医療従事者役AIとの実践シミュレーター**です
-・評価履歴はクラウドに保存されます  
-・不具合があればお問い合わせください
-"""
+- このアプリは **患者・医療従事者役AIとの実践シミュレーター**です
+- 評価履歴はクラウドに保存されます
+- 不具合があればお問い合わせください
+""",
+        icon=":material/campaign:",
     )
 
     # ---------------------------
@@ -338,11 +328,11 @@ def login_screen():
     # ---------------------------
     st.markdown("---")
 
-    st.caption("📩 お問い合わせ")
+    st.caption("お問い合わせ")
     st.caption("a22071@ug.shoyaku.ac.jp")
 
     st.caption("")
-    st.caption("🛠 開発")
+    st.caption("開発")
     st.caption("昭和薬科大学 薬学部 数理科学 瀧澤研究室")
     st.caption("開発者：高嶋 貫多")
 

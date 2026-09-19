@@ -24,34 +24,45 @@ def load_css():
 
 load_css()
 
-# モバイル向け追加スタイル（フォールバック用インライン）
-st.markdown("""
-<style>
-/* モバイル：タイトル圧縮 */
-@media screen and (max-width: 768px) {
-    h1 { font-size: 1.1rem !important; padding-top: 0 !important; margin-top: 0 !important; }
-    h2 { font-size: 0.95rem !important; }
-    .main .block-container { padding-top: 0.4rem !important; }
-    /* Streamlit デフォルトの上部余白を削減 */
-    .stAppViewBlockContainer { padding-top: 0.5rem !important; }
-}
-/* チャット入力を常に下部に固定 */
-[data-testid="stBottom"] {
-    background: rgba(14, 17, 23, 0.92) !important;
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
-    border-top: 1px solid rgba(255,255,255,0.08) !important;
-    padding: 0.5rem 0.75rem !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
 # ==========================================================
-# URLフラグメント → クエリパラメータ変換（パスワードリセット用）
+# ・URLフラグメント → クエリパラメータ変換（パスワードリセット用）
+# ・ライト／ダークの判定（highlight.css の配色を Streamlit に合わせる）
+#   Streamlit の文字色が明るければダークテーマとみなし、
+#   <html data-md-theme="dark"> を付ける。メニューからテーマを
+#   切り替えられた場合にも追従できるよう、定期的に確認する。
+#
+#   判定処理は親ページに <script> として差し込んで常駐させる。
+#   この iframe の中で関数を作って setInterval に渡すと、
+#   iframe が作り直されたときに関数ごと動かなくなるため。
 # ==========================================================
 import streamlit.components.v1 as components
 components.html("""
 <script>
+(function() {
+    var d = window.parent.document;
+    if (d.getElementById('md-theme-sync')) return;
+    var s = d.createElement('script');
+    s.id = 'md-theme-sync';
+    s.textContent = [
+        '(function () {',
+        '  function sync() {',
+        '    var app = document.querySelector(".stApp");',
+        '    if (!app) return;',
+        '    var m = getComputedStyle(app).color.match(/[0-9]+/g);',
+        '    if (!m) return;',
+        '    var lum = (0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]) / 255;',
+        '    var theme = lum > 0.5 ? "dark" : "light";',
+        '    var root = document.documentElement;',
+        '    if (root.getAttribute("data-md-theme") !== theme) {',
+        '      root.setAttribute("data-md-theme", theme);',
+        '    }',
+        '  }',
+        '  sync();',
+        '  setInterval(sync, 400);',
+        '})();'
+    ].join('\\n');
+    d.head.appendChild(s);
+})();
 (function() {
     var hash = window.parent.location.hash;
     if (hash && hash.includes('type=recovery')) {

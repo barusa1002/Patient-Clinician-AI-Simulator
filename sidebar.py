@@ -2,6 +2,7 @@
 import streamlit as st
 from utils import reset_session, replace_date_templates, make_prescription_leaflet
 from config import version_label
+from ui_mode_select import LEARNING_MODES
 from db import logout
 
 
@@ -14,15 +15,17 @@ def render_sidebar(
     # 学習モード表示・切替
     # ============================
     learning_mode = st.session_state.get("learning_mode", "スタンダードモード")
-    st.sidebar.markdown(f"**🎓 学習モード：{learning_mode}**")
-    if st.sidebar.button("🔀 学習モードを変更する"):
+    mode_icon = LEARNING_MODES.get(learning_mode, {}).get("icon", "school")
+    st.sidebar.caption("学習モード")
+    st.sidebar.markdown(f":material/{mode_icon}: **{learning_mode}**")
+    if st.sidebar.button("学習モードを変更する", icon=":material/swap_horiz:"):
         keys_to_clear = ["learning_mode", "chat_history", "chat_session", "current_scenario"]
         for k in keys_to_clear:
             st.session_state.pop(k, None)
         st.rerun()
 
     st.sidebar.markdown("---")
-    st.sidebar.header("📝 課題設定")
+    st.sidebar.header("課題設定")
 
     # ============================
     # 課題選択
@@ -46,18 +49,18 @@ def render_sidebar(
     # ============================
     # 課題詳細（折りたたみ）
     # ============================
-    with st.sidebar.expander("📘 課題詳細", expanded=True):
+    with st.sidebar.expander("課題詳細", expanded=True, icon=":material/assignment:"):
 
-        st.markdown("### 📘 課題内容")
+        st.markdown("### 課題内容")
         st.write(task_info_display["課題内容"])
 
-        st.markdown("### 👤 患者情報")
+        st.markdown("### 患者情報")
         st.text(task_info_display["患者情報"])
 
-        st.markdown("### 🧑‍⚕️ 医療従事者情報")
+        st.markdown("### 医療従事者情報")
         st.text(task_info_display["医療従事者情報"])
 
-        st.markdown("### 💊 処方内容")
+        st.markdown("### 処方内容")
         st.markdown(
             make_prescription_leaflet(task_info_display["処方内容"]),
             unsafe_allow_html=True,
@@ -65,19 +68,19 @@ def render_sidebar(
 
         refs = selected["task_info"].get("参考資料")
         if refs:
-            st.markdown("### 📚 参考資料")
+            st.markdown("### 参考資料")
             for ref in refs:
                 st.markdown(f"[{ref['label']}]({ref['url']})")
 
-        st.markdown(f"### 🕒 日時\n{current_datetime}")
+        st.markdown(f"### 日時\n{current_datetime}")
 
     # ============================
     # 前回の薬歴（継続処方シナリオのみ）
     # ============================
     prev_soap = selected["task_info"].get("前回の薬歴")
     if prev_soap:
-        with st.sidebar.expander("📋 前回の薬歴", expanded=False):
-            st.caption(f"📅 実施日：{prev_soap.get('実施日', '')}")
+        with st.sidebar.expander("前回の薬歴", expanded=False, icon=":material/history:"):
+            st.caption(f"実施日：{prev_soap.get('実施日', '')}")
             st.markdown("---")
             for key, label in [
                 ("S", "S（主観的情報 / 患者の訴え）"),
@@ -96,23 +99,23 @@ def render_sidebar(
     # ============================
     notebook = selected["task_info"].get("お薬手帳")
     if notebook:
-        with st.sidebar.expander("📕 お薬手帳", expanded=False):
+        with st.sidebar.expander("お薬手帳", expanded=False, icon=":material/menu_book:"):
             st.caption("患者のお薬手帳の記録です。")
             for i, entry in enumerate(notebook):
                 if i > 0:
                     st.markdown("---")
                 st.markdown(f"**{entry.get('日付', '')}**")
                 if entry.get("医療機関"):
-                    st.caption(f"🏥 {entry['医療機関']}")
+                    st.caption(f":material/local_hospital: {entry['医療機関']}")
                 if entry.get("薬局"):
-                    st.caption(f"💊 {entry['薬局']}")
+                    st.caption(f":material/local_pharmacy: {entry['薬局']}")
                 st.text(entry.get("処方", ""))
 
     # ============================
     # セッションリセット
     # ============================
     st.sidebar.markdown("---")
-    if st.sidebar.button("🔄 セッションをリセット"):
+    if st.sidebar.button("セッションをリセット", icon=":material/restart_alt:"):
         reset_session()
         st.rerun()
 
@@ -120,10 +123,12 @@ def render_sidebar(
     # AI評価
     # ============================
     st.sidebar.markdown("---")
-    st.sidebar.subheader("📝 AI評価")
+    st.sidebar.subheader("AI評価")
 
     if st.sidebar.button(
         "AIによる評価を実行",
+        icon=":material/fact_check:",
+        type="primary",
         disabled=len(st.session_state.get("chat_history", [])) == 0
     ):
         st.session_state.run_evaluation = True
@@ -132,16 +137,16 @@ def render_sidebar(
     # 設定
     # ============================
     st.sidebar.markdown("---")
-    st.sidebar.subheader("⚙️ 設定")
+    st.sidebar.subheader("設定")
 
     if not st.session_state.get("guest_mode"):
-        if st.sidebar.button("⚙️ ユーザー設定"):
+        if st.sidebar.button("ユーザー設定", icon=":material/settings:"):
             st.session_state.page = "settings"
 
     # チュートリアルの再表示は「ユーザー設定」画面にボタンがあるため、
     # ここには置かない。
 
-    if st.sidebar.button("⬅ チャットに戻る"):
+    if st.sidebar.button("チャットに戻る", icon=":material/chat:"):
         st.session_state.page = "chat"
 
     # ============================
@@ -149,9 +154,9 @@ def render_sidebar(
     # ============================
     if st.session_state.get("role") == "staff":
         st.sidebar.markdown("---")
-        st.sidebar.subheader("👨‍🏫 教職員メニュー")
+        st.sidebar.subheader("教職員メニュー")
 
-        if st.sidebar.button("📊 学生評価一覧"):
+        if st.sidebar.button("学生評価一覧", icon=":material/monitoring:"):
             st.session_state.page = "staff_dashboard"
             st.rerun()
 
@@ -161,44 +166,43 @@ def render_sidebar(
     st.sidebar.markdown("---")
 
     if st.session_state.get("guest_mode"):
-        st.sidebar.markdown("---")
-        st.sidebar.caption("👥 ゲストモード（履歴保存なし）")
-        if st.sidebar.button("📝 登録してデータを保存する", use_container_width=True):
+        st.sidebar.caption("ゲストモード（履歴は保存されません）")
+        if st.sidebar.button("登録してデータを保存する", icon=":material/person_add:", use_container_width=True):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
     else:
-        with st.sidebar.expander("👤 ログイン情報", expanded=True):
+        with st.sidebar.expander("ログイン情報", expanded=True, icon=":material/account_circle:"):
             st.write(f"**{st.session_state.get('email', '')}**")
-            if st.button("🚪 ログアウト"):
+            if st.button("ログアウト", icon=":material/logout:"):
                 logout()
                 st.rerun()
 
     # ============================
     # お問い合わせ
     # ============================
-    with st.sidebar.expander("📩 お問い合わせ"):
+    with st.sidebar.expander("お問い合わせ", icon=":material/mail:"):
         st.markdown("""
 不具合や質問がある場合は  
-✉ a22071@ug.shoyaku.ac.jp
+a22071@ug.shoyaku.ac.jp
 """)
 
     # ============================
     # アンケート
     # ============================
-    with st.sidebar.expander("📝 使用後アンケート"):
+    with st.sidebar.expander("使用後アンケート", icon=":material/rate_review:"):
         st.markdown("[アンケートに回答する](https://forms.gle/JDxUAMchNLXoYsCYA)")
         st.image("images/form.png", use_container_width=True)
 
     # ============================
     # 開発者情報
     # ============================
-    with st.sidebar.expander("🛠 開発者情報"):
+    with st.sidebar.expander("開発者情報", icon=":material/info:"):
         st.markdown("""
 昭和薬科大学  
 薬学部 数理科学 瀧澤研究室  
 
-💊 患者・医療従事者役 AI シミュレーター  
+患者・医療従事者役 AI シミュレーター  
 
 開発：高嶋 貫多
 """)

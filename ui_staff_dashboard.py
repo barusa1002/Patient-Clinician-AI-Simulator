@@ -5,9 +5,10 @@ import matplotlib.pyplot as plt
 from db import supabase
 from ui_evaluation_viewer import (
     render_radar_chart,
-    render_evaluation_history,
+    render_grouped_history,
     get_font_prop,
     normalize_evaluation,
+    parse_jst,
 )
 
 # ===============================
@@ -70,6 +71,12 @@ def group_by_user(evaluations):
 # ===============================
 # フィルタ処理
 # ===============================
+def _jst_date(evaluation):
+    """評価の作成日時を日本時間の YYYY-MM-DD にする（UTCのまま扱うと日付がずれる）"""
+    dt = parse_jst(evaluation.get("created_at") or evaluation.get("timestamp"))
+    return dt.strftime("%Y-%m-%d") if dt else ""
+
+
 def apply_filters(evaluations, selected_date, selected_scenario):
 
     filtered = evaluations
@@ -77,7 +84,7 @@ def apply_filters(evaluations, selected_date, selected_scenario):
     if selected_date != "すべて":
         filtered = [
             e for e in filtered
-            if e.get("created_at", "").startswith(selected_date)
+            if _jst_date(e) == selected_date
         ]
 
     if selected_scenario != "すべて":
@@ -226,11 +233,8 @@ def render_staff_dashboard():
     st.markdown("### 絞り込み")
 
     # 日付
-    dates = [
-        e.get("created_at", "")[:10]
-        for e in evaluations if e.get("created_at")
-    ]
-    unique_dates = sorted(list(set(dates)))
+    dates = [_jst_date(e) for e in evaluations]
+    unique_dates = sorted({d for d in dates if d}, reverse=True)
 
     selected_date = st.selectbox(
         "日付",
@@ -278,10 +282,7 @@ def render_staff_dashboard():
     # ===============================
     st.markdown("## 評価履歴")
 
-    render_evaluation_history(
-        evaluations,
-        show_detail=True
-    )
+    render_grouped_history(evaluations, key="staff_history_group_by")
 
     # ===============================
     # 戻る

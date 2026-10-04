@@ -237,88 +237,13 @@ def render_radar_chart(histories, mode="平均", categories=None):
 
 
 # ===============================
-# 評価履歴
-# ===============================
-def render_evaluation_history(histories, show_detail=True):
-
-    if not histories:
-        st.info("まだ評価履歴はありません")
-        return
-
-    for h in reversed(histories):
-
-        evaluation = normalize_evaluation(h)
-        if not evaluation:
-            continue
-
-        scores = evaluation.get("scores", {})
-        valid_scores = {k: v for k, v in scores.items() if v in [0, 1]}
-
-        total = len(valid_scores)
-        achieved = sum(valid_scores.values())
-        rate = achieved / total if total else 0
-        passed = rate >= 0.7
-
-        raw_time = h.get("created_at") or h.get("timestamp")
-
-        if raw_time:
-            try:
-                # Supabase の created_at は UTC。日本時間に変換して表示する
-                dt = datetime.fromisoformat(raw_time.replace("Z", "+00:00"))
-                if dt.tzinfo is not None:
-                    dt = dt.astimezone(_JST)
-                timestamp = dt.strftime("%Y-%m-%d %H:%M")
-            except ValueError:
-                timestamp = raw_time
-        else:
-            timestamp = "日時不明"
-        scenario = str(h.get("scenario", "")).strip()
-
-        with st.expander(
-            f"{timestamp}｜{scenario}",
-            icon=":material/check_circle:" if passed else ":material/cancel:",
-        ):
-
-            st.markdown(md_score(rate, achieved, total, passed, small=True),
-                        unsafe_allow_html=True)
-            st.progress(rate)
-
-            st.markdown("#### 達成項目")
-            achieved_items = evaluation.get("achieved", [])
-            if achieved_items:
-                st.markdown(md_list([("check_circle", "ok", i, "") for i in achieved_items]),
-                            unsafe_allow_html=True)
-            else:
-                st.caption("該当なし")
-
-            st.markdown("#### 不足項目")
-            missing_rows = [
-                ("error", "ng", m.get("item", "不明") if isinstance(m, dict) else m, "")
-                for m in evaluation.get("missing", [])
-            ]
-            if missing_rows:
-                st.markdown(md_list(missing_rows), unsafe_allow_html=True)
-            else:
-                st.caption("該当なし")
-
-            if show_detail:
-                st.markdown("#### 各評価項目")
-                view = {1: ("check_circle", "ok"), 0: ("cancel", "ng")}
-                st.markdown(
-                    md_list([(*view.get(val, ("remove", "")), item, "")
-                             for item, val in scores.items()]),
-                    unsafe_allow_html=True,
-                )
-
-
-# ===============================
 # 評価履歴（課題別・日付別にまとめて表示）
 # ===============================
 _WEEKDAYS = "月火水木金土日"
 _MIN_DT = datetime(1970, 1, 1, tzinfo=_JST)
 
 
-def _parse_jst(raw):
+def parse_jst(raw):
     """Supabase の created_at（UTC）を日本時間の datetime にする。読めなければ None"""
     if not raw:
         return None
@@ -350,7 +275,7 @@ def _history_rows(histories):
             "achieved": achieved,
             "rate": rate,
             "passed": rate >= 0.7,
-            "dt": _parse_jst(h.get("created_at") or h.get("timestamp")),
+            "dt": parse_jst(h.get("created_at") or h.get("timestamp")),
             "scenario": str(h.get("scenario") or "").strip() or "（課題名なし）",
             "subscenario": str(h.get("subscenario") or "").strip(),
         })
@@ -429,7 +354,7 @@ def _trend_html(rows):
             + '<span class="ms md-trend-arrow">arrow_forward</span>'.join(chips) + "</div>")
 
 
-def render_grouped_history(histories):
+def render_grouped_history(histories, key="history_group_by"):
     """評価履歴を「課題別」か「日付別」にまとめて表示する"""
     rows = _history_rows(histories)
     if not rows:
@@ -440,7 +365,7 @@ def render_grouped_history(histories):
         "まとめ方",
         ["課題別", "日付別"],
         default="課題別",
-        key="history_group_by",
+        key=key,
     ) or "課題別"
 
     n_scenarios = len({r["scenario"] for r in rows})

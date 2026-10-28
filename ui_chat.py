@@ -41,12 +41,20 @@ def _detect_gigi_end(chat_history):
 # ==================================================
 # 疑義照会：処方箋備考欄フォーム
 # ==================================================
-def _render_prescription_form():
-    """疑義照会完了後の処方箋備考欄記入フォームを描画する"""
+def _render_prescription_form(in_hospital=False):
+    """疑義照会完了後の記録フォームを描画する
+
+    薬局は院外処方箋の備考欄に、病院は疑義照会記録に残す。
+    記録する項目（日時・方法・照会者・照会先・変更内容）は同じ。
+    """
     from datetime import datetime as _dt
     st.markdown("---")
-    st.markdown("### 処方箋 備考欄記載")
-    st.caption("疑義照会が完了しました。処方箋の備考欄に記載する内容を入力してください。")
+    if in_hospital:
+        st.markdown("### 疑義照会記録")
+        st.caption("疑義照会が完了しました。疑義照会記録に残す内容を入力してください。")
+    else:
+        st.markdown("### 処方箋 備考欄記載")
+        st.caption("疑義照会が完了しました。処方箋の備考欄に記載する内容を入力してください。")
 
     if st.session_state.get("prescription_submitted"):
         notes = st.session_state.get("prescription_notes", {})
@@ -322,14 +330,18 @@ def render_chat_page(
     # ==================================================
     # 疑義照会：処方箋備考欄フォーム
     # ==================================================
-    if scenario == "疑義照会" and _detect_gigi_end(st.session_state.get("chat_history", [])):
-        _render_prescription_form()
+    if scenario.startswith("疑義照会") and _detect_gigi_end(st.session_state.get("chat_history", [])):
+        _render_prescription_form(in_hospital=scenario.endswith("（病院）"))
 
     # ==================================================
     # SOAP薬歴フォーム（スキルアップモード・薬局/病院実習のみ）
     # ==================================================
     _learning_mode = st.session_state.get("learning_mode", "")
-    _is_soap_target = _learning_mode == "スキルアップモード" and mode in ("薬局実習", "病院実習")
+    _is_soap_target = (
+        _learning_mode == "スキルアップモード"
+        and mode in ("薬局実習", "病院実習")
+        and not scenario.startswith(("疑義照会", "情報提供"))
+    )
     if _is_soap_target and has_history:
         if not st.session_state.get("show_soap_form") and not st.session_state.get("soap_submitted"):
             if st.button("SOAP薬歴を記入する", key="soap_open_btn", icon=":material/edit_note:"):
@@ -345,7 +357,7 @@ def render_chat_page(
 
         prescription_notes = (
             st.session_state.get("prescription_notes")
-            if scenario == "疑義照会"
+            if scenario.startswith("疑義照会")
             else None
         )
 

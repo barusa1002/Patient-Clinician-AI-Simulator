@@ -200,6 +200,13 @@ _SKIP_PREFIXES = (
 def _pack(code: str) -> str:
     return f"https://www.info.pmda.go.jp/go/pack/{code}/{code}?view=body&lang=ja"
 
+
+# 一般名ごとの一覧ページ（その成分の先発品・後発品の添付文書が並ぶ）。
+# PMDAの医薬品検索はURLに薬品名を付けても検索されない（空の検索画面が開く）ため、
+# 直接リンクの無い薬はこちらに飛ばす。コードは一般名の7桁で、改訂で番号が変わらない。
+def _general(code: str) -> str:
+    return f"https://www.pmda.go.jp/PmdaSearch/iyakuDetail/GeneralList/{code}"
+
 _DRUG_URL_MAP = {
     # ── 鎮痛・解熱 ──
     "ロキソプロフェン":  _pack("1149019F1706_1_07"),   # 後発「TCK」
@@ -260,6 +267,50 @@ _DRUG_URL_MAP = {
     "プレガバリン":      _pack("1190017F1185_1_05"),   # 後発「トーワ」
     "ゾルピデム":        _pack("1129009F1335_1_09"),   # 後発「明治」
     "クロナゼパム":      _pack("1139003C1052_2_15"),   # ランドセン
+    # ── スキルアップモード（薬局・病院×代表8疾患）などで使う薬：一般名ごとの一覧へ ──
+    # 2026-10-30、PMDAの検索結果から一般名コードを調べ、ページが開くことを確認した
+    "アモキシシリン":    _general("6131001"),
+    "イーケプラ":        _general("1139010"),
+    "レベチラセタム":    _general("1139010"),
+    "エクメット":        _general("3969104"),   # ビルダグリプチン・メトホルミン
+    "エゼチミブ":        _general("2189018"),
+    "エックスフォージ":  _general("2149114"),   # バルサルタン・アムロジピン
+    "ユニシア":          _general("2149116"),   # カンデサルタン・アムロジピン
+    "エビリファイ":      _general("1179045"),   # アリピプラゾール（内服）
+    "エフピー":          _general("1169010"),   # セレギリン
+    "オキサリプラチン":  _general("4291410"),
+    "エルプラット":      _general("4291410"),
+    "オキシコンチン":    _general("8119002"),   # オキシコドン
+    "オキノーム":        _general("8119002"),
+    "オメプラゾール":    _general("2329022"),   # 内服
+    "オルメサルタン":    _general("2149044"),
+    "カペシタビン":      _general("4223005"),
+    "ザルティア":        _general("2590016"),   # タダラフィル
+    "シタグリプチン":    _general("39690B2"),   # 後発品
+    "スインプロイク":    _general("2359007"),   # ナルデメジン
+    "セフトリアキソン":  _general("6132419"),
+    "ティーエスワン":    _general("4229101"),
+    "トラマール":        _general("1149038"),   # トラマドール（内服）
+    "ドンペリドン":      _general("2399005"),   # 内服
+    "バクタ配合":        _general("6290100"),   # ST合剤（「スルバクタム」と取り違えないよう「配合」まで）
+    "バンコマイシン":    _general("6113400"),   # 注射
+    "フォシーガ":        _general("3969019"),   # ダパグリフロジン
+    "フォリアミン":      _general("3135001"),   # 葉酸（内服）
+    "フルオロウラシル":  _general("4223401"),   # 注射
+    "プレドニゾロン":    _general("2456001"),   # 内服
+    "リウマトレックス":  _general("3999016"),
+    "メトトレキサート":  _general("3999016"),   # 関節リウマチ用（内服）
+    "モンテルカスト":    _general("4490026"),
+    "ラジレス":          _general("2149047"),   # アリスキレン
+    "ランソプラゾール":  _general("2329023"),   # 内服
+    "リクシアナ":        _general("3339002"),   # エドキサバン
+    "レクサプロ":        _general("1179054"),   # エスシタロプラム
+    "レバミピド":        _general("2329021"),   # 内服
+    "レボフロキサシン":  _general("6241013"),   # 内服
+    "レボホリナート":    _general("3929407"),
+    "ロゼレム":          _general("1190016"),   # ラメルテオン
+    "ラクテック":        _general("3319534"),   # 乳酸リンゲル液
+    "乳酸リンゲル":      _general("3319534"),
     # ── OTC ──
     # 2026-10、PMDAが一般用医薬品の置き場所を変え、旧形式（info.pmda.go.jp/ogo/…）は
     # 空のページになったため新形式に変更。パブロンゴールドAは処方どおり〈微粒〉。
@@ -509,6 +560,8 @@ def parse_prescription(text: str):
             and not any(body.startswith(s) for s in _SKIP_PREFIXES)
             # 「（＝1日2吸入…）」のような括弧書きの補足は薬剤とみなさない
             and not (line[:1] in ("（", "(") and bm is None)
+            # 「・まず利尿薬の点滴で…」のような今後の治療予定の箇条書きも薬剤ではない
+            and not body.startswith("・")
         )
 
         if is_drug:
@@ -611,8 +664,13 @@ def make_prescription_leaflet(prescription_text: str) -> str:
         # 添付文書検索用に、規格を除いた薬品名を取り出す
         nm = re.match(r'^([^\d]+?)[\s]*[\d.]', name)
         lookup = nm.group(1).strip() if nm else name
+        # 「ガスター10」のように名前に数字を含む薬もあるので、見つからなければ薬品名全体でも引く
+        # （先に全体で引くと、1行に複数の薬が並ぶ行で別の薬に当たってしまう）
+        url = _pmda_url_for(lookup)
+        if "iyakuSearch" in url:
+            url = next((u for k, u in _DRUG_URL_MAP.items() if k in name), url)
         head.append(
-            f'<a class="rx-name" href="{_html.escape(_pmda_url_for(lookup))}" '
+            f'<a class="rx-name" href="{_html.escape(url)}" '
             f'target="_blank" rel="noopener">{_html.escape(name)}</a>'
         )
         head.append("</div>")

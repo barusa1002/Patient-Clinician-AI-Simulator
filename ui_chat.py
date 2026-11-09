@@ -13,10 +13,13 @@ from evaluation import (
     build_evaluation_prompt,
     save_evaluation,
     EVALUATION_CHECKLISTS,
+    checklist_for,
+    EVALUATION_ANSWER_KEYS,
 )
 from utils import strip_thought, md_list as _md_list, md_score
 from llm import start_chat
 from config import MODEL_NAME
+from scenario_kind import task_kind, is_gigi, is_staff_talk
 
 
 
@@ -282,11 +285,7 @@ def render_chat_page(
         hint_clicked = st.button("ヒントを見る", disabled=not has_history, key="hint_btn", icon=":material/lightbulb:")
     if hint_clicked:
         # 評価時と同じ優先順位（サブシナリオ別→シナリオ別）でチェックリストを取得
-        sub_key = f"{scenario}|{subscenario}"
-        checklist = (
-            EVALUATION_CHECKLISTS.get(sub_key)
-            or EVALUATION_CHECKLISTS.get(scenario, {})
-        )
+        checklist = checklist_for(scenario, subscenario)
         checklist_text = "\n".join(f"- {item}" for item in checklist)
 
         conversation = ""
@@ -330,17 +329,18 @@ def render_chat_page(
     # ==================================================
     # 疑義照会：処方箋備考欄フォーム
     # ==================================================
-    if scenario.startswith("疑義照会") and _detect_gigi_end(st.session_state.get("chat_history", [])):
-        _render_prescription_form(in_hospital=scenario.endswith("（病院）"))
+    _kind = task_kind(scenario, subscenario)
+    if is_gigi(scenario, subscenario) and _detect_gigi_end(st.session_state.get("chat_history", [])):
+        _render_prescription_form(in_hospital=_kind.endswith("（病院）"))
 
     # ==================================================
-    # SOAP薬歴フォーム（スキルアップモード・薬局/病院実習のみ）
+    # SOAP薬歴フォーム（スキルアップ・初期研修の、患者と話す業務のみ）
     # ==================================================
     _learning_mode = st.session_state.get("learning_mode", "")
     _is_soap_target = (
-        _learning_mode == "スキルアップモード"
-        and mode in ("薬局実習", "病院実習")
-        and not scenario.startswith(("疑義照会", "情報提供"))
+        _learning_mode in ("スキルアップモード", "初期研修")
+        and mode in ("薬局実習", "病院実習", "薬局", "病院")
+        and not is_staff_talk(scenario, subscenario)
     )
     if _is_soap_target and has_history:
         if not st.session_state.get("show_soap_form") and not st.session_state.get("soap_submitted"):
@@ -357,7 +357,7 @@ def render_chat_page(
 
         prescription_notes = (
             st.session_state.get("prescription_notes")
-            if scenario.startswith("疑義照会")
+            if is_gigi(scenario, subscenario)
             else None
         )
 
@@ -600,6 +600,9 @@ def render_chat_page(
             task_info_text = "\n".join(
                 f"【{k}】\n{v}" for k, v in selected.get("task_info", {}).items()
             )
+            answer_key = EVALUATION_ANSWER_KEYS.get(f"{scenario}|{subscenario}")
+            if answer_key:
+                task_info_text += f"\n【この課題の正解（模範会話はこの判定に沿うこと）】\n{answer_key}"
 
             model_answer_prompt = f"""
 あなたは薬学実習の指導教員です。

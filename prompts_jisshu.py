@@ -1313,7 +1313,12 @@ LDLが目標に届かず、9ヶ月前にエゼチミブという薬が追加さ�
 ・現在は軽い散歩程度の運動
 
 【既往歴】
-・前立腺肥大（経過観察中）
+・前立腺肥大（泌尿器科で年1回の経過観察中。前立腺の薬は飲んでいない）
+
+【排尿の状態（聞かれたら答える）】
+・尿の出にくさ、残尿感はない
+・夜中にトイレに起きるのは1回くらい
+・おしっこが出なくなったことは一度もない
 
 【不安・疑問】
 ・カプセルの扱い方がわからない
@@ -1445,14 +1450,48 @@ LDLが目標に届かず、9ヶ月前にエゼチミブという薬が追加さ�
 
 
 # ==========================================================
-# 代表8疾患のシナリオ（prompts_jisshu_8.py）を組み込む
-#   薬局実習：疑義照会（薬局）
-#   病院実習：初回面談・服薬指導・退院時指導・情報提供・疑義照会（各8疾患）
+# 課題の並べ方
+#   薬局実習（11課題）：代表8疾患それぞれの「経過を追う服薬指導」＋ OTC相談・受診勧奨 ＋
+#                       疑義照会（薬局）＋ 薬事トリアージ（薬局）
+#   病院実習（10課題）：代表8疾患それぞれ ①初回面談 → ②服薬指導 → ③退院時指導（同じ患者）＋
+#                       情報提供（病院）＋ 疑義照会（病院）
+#   サブシナリオ名の先頭は業務名（「①服薬指導｜…」）。評価項目の選び方は scenario_kind.py。
 # ==========================================================
-from prompts_jisshu_8 import PHARMACY_SCENARIO, PHARMACY_GIGI, HOSPITAL_SCENARIOS  # noqa: E402
+import re as _re  # noqa: E402
 
-JISSHU_SCENARIOS["薬局実習"].append(PHARMACY_SCENARIO)
+from prompts_jisshu_8 import (  # noqa: E402
+    PHARMACY_SCENARIO, PHARMACY_GIGI,
+    PHARMACY_TRIAGE_SCENARIO, PHARMACY_TRIAGE,
+    HOSPITAL_SCENARIOS, DISEASES,
+)
+from prompts_jisshu_course import PHARMACY_COURSE, HEART_LATER  # noqa: E402
+
+
+def _tagged(subs, kind):
+    """「サブシナリオ①：初回処方（…）」→「①服薬指導｜初回処方（…）」"""
+    return {_re.sub(r"^サブシナリオ(.)：", r"\1" + kind + "｜", k): v for k, v in subs.items()}
+
+
+_old = JISSHU_SCENARIO_PROMPTS["薬局実習"]
+_pharmacy = dict(PHARMACY_COURSE)
+_pharmacy["高血圧症（薬局）"] = _tagged(_old["高血圧の服薬指導"], "服薬指導")
+_pharmacy["糖尿病（薬局）"] = _tagged(_old["糖尿病の服薬指導"], "服薬指導")
+# 心疾患：脂質異常症の治療（①〜③）の続きで狭心症を発症する（④⑤）
+_pharmacy["心疾患（薬局）"] = {**_tagged(_old["脂質異常症の服薬指導"], "服薬指導"), **HEART_LATER}
+_pharmacy["免疫・アレルギー疾患（薬局）"] = _tagged(_old["喘息・COPDの吸入指導"], "吸入指導")
+
+JISSHU_SCENARIO_PROMPTS["薬局実習"] = {f"{d}（薬局）": _pharmacy[f"{d}（薬局）"] for d in DISEASES}
+JISSHU_SCENARIO_PROMPTS["薬局実習"]["OTC相談・受診勧奨"] = _old["OTC相談・受診勧奨"]
 JISSHU_SCENARIO_PROMPTS["薬局実習"][PHARMACY_SCENARIO] = PHARMACY_GIGI
+JISSHU_SCENARIO_PROMPTS["薬局実習"][PHARMACY_TRIAGE_SCENARIO] = PHARMACY_TRIAGE
+JISSHU_SCENARIOS["薬局実習"] = list(JISSHU_SCENARIO_PROMPTS["薬局実習"])
 
 JISSHU_SCENARIOS["病院実習"] = list(HOSPITAL_SCENARIOS)
 JISSHU_SCENARIO_PROMPTS["病院実習"] = dict(HOSPITAL_SCENARIOS)
+
+# 参考資料：COPD（チオトロピウム）は前立腺肥大の扱いを添付文書で確かめられるようにする
+#   2.2 前立腺肥大等による排尿障害のある患者は禁忌／9.1.2 前立腺肥大（排尿障害がある場合を除く）は注意
+from prompts_jisshu_8 import PMDA as _PMDA, PI_SPIRIVA as _PI_SPIRIVA  # noqa: E402
+
+JISSHU_SCENARIO_PROMPTS["薬局実習"]["免疫・アレルギー疾患（薬局）"]["④吸入指導｜COPD患者へのDPI指導（別患者・単発）"][
+    "task_info"]["参考資料"] = [_PI_SPIRIVA, _PMDA]

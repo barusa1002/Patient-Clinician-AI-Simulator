@@ -392,6 +392,7 @@ _BADGE_STYLES = {
     "新規":     "b-new",
     "追加":     "b-add",
     "継続":     "b-cont",
+    "再開":     "b-cont",
     "増量":     "b-up",
     "減量":     "b-down",
     "中止":     "b-stop",

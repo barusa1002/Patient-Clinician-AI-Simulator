@@ -381,7 +381,8 @@ def render_chat_page(
             eval_session = start_chat(
                 client=st.session_state.gemini_client,
                 model_name=MODEL_NAME,
-                system_prompt="あなたは薬学実習の評価者です。会話ログをもとに客観的な評価を行います。"
+                system_prompt="あなたは薬学実習の評価者です。会話ログをもとに客観的な評価を行います。",
+                temperature=0,
             )
             raw_eval = eval_session.send_message(eval_prompt).text
 

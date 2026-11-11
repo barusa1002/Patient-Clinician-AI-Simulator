@@ -8,10 +8,15 @@ def get_client(api_key: str):
     genai.configure(api_key=api_key)
     return genai  # ← clientじゃなくてgenai自体を返す
 
-def start_chat(client, model_name, system_prompt):
+def start_chat(client, model_name, system_prompt, temperature=None):
+    # temperature を指定したときだけ設定する（評価は 0 にして、同じ会話なら同じ評価にする）
+    kwargs = {}
+    if temperature is not None:
+        kwargs["generation_config"] = {"temperature": temperature}
     model = client.GenerativeModel(
         model_name=model_name,
         system_instruction=system_prompt,
+        **kwargs,
     )
     chat = model.start_chat()
     return chat

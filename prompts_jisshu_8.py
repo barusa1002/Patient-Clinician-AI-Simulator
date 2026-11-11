@@ -150,7 +150,7 @@ def ward_gigi(hospital, ward, doctor, situation, reaction, correction):
     surname = doctor.split()[0]
     return f"""
 あなたは{hospital} {ward}の担当医「{doctor}」です。
-病棟薬剤師（実習生）からPHSで連絡を受けます。
+病棟薬剤師からPHSで連絡を受けます。
 最初の発言では必ず「はい、{surname}です。」と出てください。
 
 【状況】

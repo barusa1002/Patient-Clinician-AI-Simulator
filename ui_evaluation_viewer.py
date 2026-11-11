@@ -121,7 +121,10 @@ def render_radar_chart(histories, mode="平均", categories=None):
     # ===============================
     # 描画
     # ===============================
-    labels = categories
+    # 課題が多い（スキルアップモードは21課題）と課題名どうしが重なって読めないので、
+    # 図には番号だけを出し、図の下に「番号・課題名・達成率」の表を出す（アバター版と同じ）
+    numbered = len(categories) > 12
+    labels = [str(i + 1) for i in range(len(categories))] if numbered else categories
     num_vars = len(labels)
 
     angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False)
@@ -162,7 +165,7 @@ def render_radar_chart(histories, mode="平均", categories=None):
     if font_prop:
         ax.set_xticklabels(
             labels,
-            fontsize=4,
+            fontsize=7 if numbered else 4,
             color="navy",
             fontweight="bold",
             fontproperties=font_prop
@@ -170,7 +173,7 @@ def render_radar_chart(histories, mode="平均", categories=None):
     else:
         ax.set_xticklabels(labels, fontsize=6)
 
-    ax.tick_params(axis='x', pad=50)
+    ax.tick_params(axis='x', pad=14 if numbered else 50)
 
     # ===============================
     # %表示
@@ -234,6 +237,12 @@ def render_radar_chart(histories, mode="平均", categories=None):
 
     st.pyplot(fig)
     plt.close(fig)
+
+    if numbered:
+        rows = "\n".join(
+            f"| {i + 1} | {c} | {int(v * 100)}% |" for i, (c, v) in enumerate(zip(categories, values))
+        )
+        st.markdown("| 番号 | 課題 | 達成率 |\n|---:|---|---:|\n" + rows)
 
 
 # ===============================

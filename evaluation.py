@@ -957,6 +957,13 @@ for _sub in ("①服薬指導｜初回処方（スタチン開始）",
              "③服薬指導｜1年後（筋症状でスタチン減量）"):
     EVALUATION_CHECKLISTS[f"心疾患（薬局）|{_sub}"] = EVALUATION_CHECKLISTS["脂質異常症の服薬指導"]
 
+# スキルアップモード・初期研修は、決まった評価項目ではなく、課題ごとに
+# 「この患者・この処方で薬剤師が確認すること・指導すること」を評価項目にする（2026-11-11 利用者の指示）。
+# 中身は evaluation_cases.py。ここに無い課題は、上の業務別の評価項目を使う。
+from evaluation_cases import CASE_CHECKLISTS  # noqa: E402
+for _key, _items in CASE_CHECKLISTS.items():
+    EVALUATION_CHECKLISTS[_key] = {item: None for item in _items}
+
 
 def checklist_for(scenario, subscenario):
     """評価項目（サブシナリオ別→課題別→業務別）"""

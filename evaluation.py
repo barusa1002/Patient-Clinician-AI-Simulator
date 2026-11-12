@@ -1,4 +1,5 @@
 #evaluation.py
+import json
 import logging
 from db import supabase
 from scenario_kind import task_kind, is_gigi
@@ -1099,6 +1100,93 @@ JSON以外の文章は絶対に出力しない。
 """
 
     return prompt
+
+
+# ==========================================================
+# 模範解答（評価で不足した項目を補った会話）
+#   会話の流れ（つなぎの言葉・相手の返事）は AI が作るが、
+#   医学・薬学の説明・指導は、添付文書などと照合して前もって作った
+#   「模範の言い方」（model_phrases.py）をそのまま使わせる（2026-11-12 利用者の指示）。
+#   アバター版（lib/model-answer.ts）も同じ文面を使う。
+# ==========================================================
+from model_phrases import MODEL_PHRASES  # noqa: E402
+
+MODEL_ANSWER_SYSTEM = "あなたは薬学実習の指導教員です。既存の会話を活かしながら不足部分を自然に補完します。"
+
+
+def missing_items_of(evaluation_json):
+    """評価で 0（未達成）だった項目。評価項目の名前そのもので返す"""
+    scores = (evaluation_json or {}).get("scores") or {}
+    return [k for k, v in scores.items() if v == 0]
+
+
+def build_model_answer_prompt(scenario, subscenario, chat_history, evaluation_json, task_info):
+    conv_lines = []
+    for role, msg in chat_history:
+        speaker = "薬剤師" if role == "user" else "相手"
+        conv_lines.append(f"{speaker}：「{msg}」")
+    existing_conv = "\n".join(conv_lines)
+
+    reasons = {}
+    for m in (evaluation_json or {}).get("missing", []) or []:
+        if isinstance(m, dict) and m.get("item"):
+            reasons[m["item"]] = m.get("reason", "")
+    missing = missing_items_of(evaluation_json)
+    phrases = MODEL_PHRASES.get(f"{scenario}|{subscenario}", {})
+
+    if missing:
+        missing_text = "\n".join(
+            f"- {item}" + (f"（{reasons[item]}）" if reasons.get(item) else "") for item in missing
+        )
+        fixed_text = "\n".join(
+            f"- {item}\n  → {phrases[item]}" for item in missing if phrases.get(item)
+        ) or "（なし）"
+    else:
+        missing_text = "（不足項目なし）"
+        fixed_text = "（なし）"
+
+    # 表になっている欄（お薬手帳・前回の薬歴）は JSON で渡す（アバター版の JSON.stringify と同じ形）
+    task_info_text = "\n".join(
+        f"【{k}】\n" + (v if isinstance(v, str) else json.dumps(v, ensure_ascii=False, separators=(",", ":")))
+        for k, v in (task_info or {}).items() if k != "参考資料"
+    )
+    answer_key = EVALUATION_ANSWER_KEYS.get(f"{scenario}|{subscenario}")
+    if answer_key:
+        task_info_text += f"\n【この課題の正解（模範会話はこの判定に沿うこと）】\n{answer_key}"
+
+    return f"""
+あなたは薬学実習の指導教員です。
+以下の「既存の会話」をベースに、不足していた評価項目を自然に補完して完成した模範会話を作成してください。
+
+【課題名】
+{scenario} / {subscenario}
+
+【シナリオ詳細情報】
+{task_info_text}
+
+【既存の会話（そのまま使うこと・変更・削除禁止）】
+{existing_conv}
+
+【不足していた評価項目（これらを補完すること）】
+{missing_text}
+
+【不足していた評価項目の模範の言い方（確定版）】
+{fixed_text}
+
+【出力ルール】
+- 既存の会話の各行はそのまま出力すること（一字一句変更・削除禁止）
+- 不足項目を補うための発言を、会話の流れが最も自然な位置に挿入すること
+- 不足項目を補う薬剤師の発言は、上の「模範の言い方（確定版）」をそのまま使うこと（前後のつなぎの言葉を足すのはよい）
+- 医学・薬学の内容（効果・副作用・飲み方・用量・相互作用・禁忌・受診の目安など）は、
+  「模範の言い方（確定版）」と「シナリオ詳細情報」に書かれていることだけを使い、新しく付け加えないこと
+- 相手（患者・医師・看護師など）の返事は、シナリオ詳細情報に沿って短く作ること
+- 補完した発言（新たに追加した行のみ）は必ず [補完] タグで囲むこと
+  例：[補完]薬剤師：「副作用についてご説明します」[/補完]
+- 既存の発言には [補完] タグを絶対に付けないこと
+- 1行1発言の形式を厳守し、行の先頭は「薬剤師：」か「相手：」にすること
+- 会話形式のみ出力すること（説明文・前置き・見出し不要）
+- 日本語で出力すること
+"""
 
 
 # ==========================================================

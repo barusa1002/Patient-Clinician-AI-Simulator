@@ -15,6 +15,8 @@ from evaluation import (
     EVALUATION_CHECKLISTS,
     checklist_for,
     EVALUATION_ANSWER_KEYS,
+    build_model_answer_prompt,
+    MODEL_ANSWER_SYSTEM,
 )
 from utils import strip_thought, md_list as _md_list, md_score
 from llm import start_chat
@@ -576,68 +578,23 @@ def render_chat_page(
                 st.warning(f"PDF生成に失敗しました：{e}")
 
         if st.button("模範解答を見る", icon=":material/auto_stories:"):
-            import re as _re
-
-            last_eval = st.session_state.get("last_evaluation_json", {})
-            missing_items = last_eval.get("missing", [])
-
-            # 既存会話を文字列化
-            conv_lines = []
-            for role, msg in st.session_state.chat_history:
-                speaker = "薬剤師" if role == "user" else "患者"
-                conv_lines.append(f"{speaker}：「{msg}」")
-            existing_conv = "\n".join(conv_lines)
-
-            # 不足項目テキスト
-            if missing_items:
-                missing_text = "\n".join(
-                    f"- {m.get('item', '')}：{m.get('reason', '')}"
-                    if isinstance(m, dict) else f"- {m}"
-                    for m in missing_items
-                )
-            else:
-                missing_text = "（不足項目なし）"
-
-            task_info_text = "\n".join(
-                f"【{k}】\n{v}" for k, v in selected.get("task_info", {}).items()
+            # 医学・薬学の説明は、前もって作った「模範の言い方」（model_phrases.py）をそのまま使わせる。
+            # 指示文は evaluation.build_model_answer_prompt（アバター版も同じ文面）
+            model_answer_prompt = build_model_answer_prompt(
+                scenario,
+                subscenario,
+                st.session_state.chat_history,
+                st.session_state.get("last_evaluation_json", {}),
+                selected.get("task_info", {}),
             )
-            answer_key = EVALUATION_ANSWER_KEYS.get(f"{scenario}|{subscenario}")
-            if answer_key:
-                task_info_text += f"\n【この課題の正解（模範会話はこの判定に沿うこと）】\n{answer_key}"
-
-            model_answer_prompt = f"""
-あなたは薬学実習の指導教員です。
-以下の「既存の会話」をベースに、不足していた評価項目を自然に補完して完成した模範会話を作成してください。
-
-【課題名】
-{scenario} / {subscenario}
-
-【シナリオ詳細情報】
-{task_info_text}
-
-【既存の会話（そのまま使うこと・変更・削除禁止）】
-{existing_conv}
-
-【不足していた評価項目（これらを補完すること）】
-{missing_text}
-
-【出力ルール】
-- 既存の会話の各行はそのまま出力すること（一字一句変更・削除禁止）
-- 不足項目を補うための発言を、会話の流れが最も自然な位置に挿入すること
-- 補完した発言（新たに追加した行のみ）は必ず [補完] タグで囲むこと
-  例：[補完]薬剤師：「副作用についてご説明します」[/補完]
-- 既存の発言には [補完] タグを絶対に付けないこと
-- 1行1発言の形式を厳守すること
-- 会話形式のみ出力すること（説明文・前置き・見出し不要）
-- 日本語で出力すること
-"""
 
             with st.spinner("模範解答を生成中..."):
                 try:
                     model_answer_session = start_chat(
                         client=st.session_state.gemini_client,
                         model_name=MODEL_NAME,
-                        system_prompt="あなたは薬学実習の指導教員です。既存の会話を活かしながら不足部分を自然に補完します。"
+                        system_prompt=MODEL_ANSWER_SYSTEM,
+                        temperature=0,
                     )
                     st.session_state["model_answer_text"] = model_answer_session.send_message(
                         model_answer_prompt

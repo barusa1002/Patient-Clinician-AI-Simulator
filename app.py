@@ -355,9 +355,9 @@ def init_chat_session(mode, selected):
         for k, v in selected["task_info"].items()
     }
 
-    # 「参考資料」は学生・教員が読むためのリンク集なので、役作りの指示には入れない
+    # 「参考資料」「進め方」は学生・教員が読むためのものなので、役作りの指示には入れない
     task_text = "\n".join(
-        f"【{k}】\n{v}" for k, v in task_info.items() if k != "参考資料"
+        f"【{k}】\n{v}" for k, v in task_info.items() if k not in ("参考資料", "進め方")
     )
 
     _no_thinking = (

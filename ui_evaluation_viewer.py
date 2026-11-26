@@ -313,7 +313,11 @@ def _attempt_html(row, title, subtitle):
     achieved_items = ev.get("achieved", [])
     if achieved_items:
         parts.append('<div class="md-attempt-h">達成できた項目</div>')
-        parts.append(md_list([("check_circle", "ok", i, "") for i in achieved_items]))
+        from evaluation import tips_for_achieved
+        tips, left_tips = tips_for_achieved(ev)
+        parts.append(md_list([("check_circle", "ok", i, f"補足：{tips[i]}" if tips.get(i) else "")
+                              for i in achieved_items]
+                             + [("lightbulb", "tip", f"補足：{t}", "") for t in left_tips]))
 
     missing_rows = []
     for m in ev.get("missing", []):

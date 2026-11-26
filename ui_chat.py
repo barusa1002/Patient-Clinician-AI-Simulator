@@ -466,9 +466,14 @@ def render_chat_page(
         # 達成できた項目
         st.markdown("### 達成できた項目")
         achieved_items = evaluation_json.get("achieved", [])
+        # 一部だけできていた項目には、達成のまま「補足」を添える
+        from evaluation import tips_for_achieved
+        tips, left_tips = tips_for_achieved(evaluation_json)
         if achieved_items:
             st.markdown(
-                _md_list([("check_circle", "ok", item, "") for item in achieved_items]),
+                _md_list([("check_circle", "ok", item, f"補足：{tips[item]}" if tips.get(item) else "")
+                          for item in achieved_items]
+                         + [("lightbulb", "tip", f"補足：{t}", "") for t in left_tips]),
                 unsafe_allow_html=True,
             )
         else:
@@ -489,6 +494,22 @@ def render_chat_page(
             st.markdown(_md_list(rows), unsafe_allow_html=True)
         else:
             st.caption("該当なし")
+
+        # 解説（医学・薬学の内容）
+        #   AIに作らせず、文献で確かめて前もって書いたもの（explanations.py）をそのまま出す。
+        #   不足した項目を先に並べる
+        from explanations import explanations_for
+        ex_rows = explanations_for(scenario, subscenario)
+        if ex_rows:
+            st.markdown("### 解説（医学・薬学のポイント）")
+            st.caption("添付文書・ガイドラインで確かめて、前もって作った解説です。")
+            ex_rows.sort(key=lambda r: scores.get(r[0]) != 0)
+            for item, text, source in ex_rows:
+                mark = {1: "✅", 0: "❌"}.get(scores.get(item), "・")
+                with st.container(border=True):
+                    st.markdown(f"**{mark} {item}**")
+                    st.markdown(text)
+                    st.caption(f"出典：{source}")
 
         # 改善アドバイス
         st.markdown("### 改善アドバイス")

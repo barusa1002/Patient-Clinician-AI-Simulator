@@ -143,9 +143,15 @@ def generate_evaluation_pdf(
     # ── ① 達成できた項目 ────────────────────────────────────
     elems.append(Paragraph("① 達成できた項目", h1_style))
     achieved_items = evaluation_json.get("achieved", [])
+    from evaluation import tips_for_achieved
+    tips, left_tips = tips_for_achieved(evaluation_json)
     if achieved_items:
         for item in achieved_items:
             elems.append(Paragraph(f"✓　{item}", body_style))
+            if tips.get(item):
+                elems.append(Paragraph(f"　補足：{tips[item]}", small_style))
+        for t in left_tips:
+            elems.append(Paragraph(f"　補足：{t}", small_style))
     else:
         elems.append(Paragraph("（該当なし）", small_style))
     elems.append(Spacer(1, 3 * mm))

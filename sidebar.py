@@ -54,6 +54,10 @@ def render_sidebar(
         st.markdown("### 課題内容")
         st.write(task_info_display["課題内容"])
 
+        if task_info_display.get("進め方"):
+            st.markdown("### 進め方")
+            st.text(task_info_display["進め方"])
+
         st.markdown("### 患者情報")
         st.text(task_info_display["患者情報"])
 

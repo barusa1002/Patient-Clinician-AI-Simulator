@@ -79,10 +79,18 @@ def render_sidebar(
         st.markdown(f"### 日時\n{current_datetime}")
 
     # ============================
-    # 前回の薬歴（継続処方シナリオのみ）
+    # 前回の薬歴
+    #   どの課題でも出す。記録がない課題は「履歴なし」と表示する。
+    #   ただし医師・看護師と話す課題（疑義照会・情報提供など）では、ないときは欄ごと出さない
     # ============================
+    from scenario_kind import is_staff_talk
+    staff_talk = is_staff_talk(scenario, subscenario)
     prev_soap = selected["task_info"].get("前回の薬歴")
-    if prev_soap:
+    if not prev_soap:
+        if not staff_talk:
+            with st.sidebar.expander("前回の薬歴（履歴なし）", expanded=False, icon=":material/history:"):
+                st.caption("この患者の前回の薬歴はありません。")
+    else:
         with st.sidebar.expander("前回の薬歴", expanded=False, icon=":material/history:"):
             st.caption(f"実施日：{prev_soap.get('実施日', '')}")
             st.markdown("---")
@@ -100,9 +108,14 @@ def render_sidebar(
 
     # ============================
     # お薬手帳
+    #   どの課題でも出す。記録がない課題は「記載なし」と表示する（医師・看護師と話す課題では出さない）
     # ============================
     notebook = selected["task_info"].get("お薬手帳")
-    if notebook:
+    if not notebook:
+        if not staff_talk:
+            with st.sidebar.expander("お薬手帳（記載なし）", expanded=False, icon=":material/menu_book:"):
+                st.caption("お薬手帳の記載はありません。")
+    else:
         with st.sidebar.expander("お薬手帳", expanded=False, icon=":material/menu_book:"):
             st.caption("患者のお薬手帳の記録です。")
             for i, entry in enumerate(notebook):
